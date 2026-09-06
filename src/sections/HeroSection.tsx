@@ -101,6 +101,7 @@ export const HeroSection: React.FC = () => {
   const [isMotionPermNeeded, setIsMotionPermNeeded] = useState(false);
   const [isMotionActive, setIsMotionActive] = useState(false);
   const isMotionActiveRef = useRef(false);
+  const smoothedRollRef = useRef(0);
 
   useEffect(() => {
     if (
@@ -342,9 +343,12 @@ export const HeroSection: React.FC = () => {
     const rollRad = Math.atan2(Math.sin(gRad), Math.cos(gRad) * sinB);
     const rollDeg = (rollRad * 180) / Math.PI;
 
+    // Low-pass filter on raw sensor roll angle to eliminate hand tremors & sensor noise
+    smoothedRollRef.current += (rollDeg - smoothedRollRef.current) * 0.3;
+
     // Natural ergonomic tilt range: ±22° wrist tilt
     const maxRoll = 22.0;
-    const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, rollDeg));
+    const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, smoothedRollRef.current));
 
     // Map strictly left-to-right:
     // Tilting phone left  (rollDeg < 0) -> 1.0 (creature looks left)
@@ -467,7 +471,7 @@ export const HeroSection: React.FC = () => {
     };
   }, [isDark]);
 
-  // Reusable frame extractor
+  // Reusable frame extractor with iOS WebKit hardware acceleration & progressive caching
   const extractFrames = async (
     videoUrl: string,
     targetFrames: number,
@@ -484,17 +488,27 @@ export const HeroSection: React.FC = () => {
       offscreenVideo.preload = 'auto';
       offscreenVideo.src = videoUrl;
 
+      // In iOS Safari, videos must be attached to the DOM to decode reliably
+      offscreenVideo.style.position = 'fixed';
+      offscreenVideo.style.opacity = '0';
+      offscreenVideo.style.pointerEvents = 'none';
+      offscreenVideo.style.zIndex = '-999';
+      offscreenVideo.style.width = '1px';
+      offscreenVideo.style.height = '1px';
+      document.body.appendChild(offscreenVideo);
+
       await new Promise<void>((resolve, reject) => {
         offscreenVideo.onloadedmetadata = () => resolve();
         offscreenVideo.onerror = (e) => reject(e);
+        setTimeout(() => resolve(), 3000);
       });
 
       const duration = offscreenVideo.duration || 10;
       durationRefTarget.current = duration;
 
-      const vWidth = offscreenVideo.videoWidth || 1920;
-      const vHeight = offscreenVideo.videoHeight || 1080;
-      const scale = Math.min(1, 960 / vWidth);
+      const vWidth = offscreenVideo.videoWidth || 1280;
+      const vHeight = offscreenVideo.videoHeight || 720;
+      const scale = Math.min(1, 640 / vWidth);
       const targetWidth = Math.round(vWidth * scale);
       const targetHeight = Math.round(vHeight * scale);
 
@@ -508,24 +522,45 @@ export const HeroSection: React.FC = () => {
         if (!isMounted()) break;
         const targetTime = (i / (targetFrames - 1)) * Math.max(0, duration - 0.05);
         await new Promise<void>((resolve) => {
-          const onSeeked = () => {
-            offscreenVideo.removeEventListener('seeked', onSeeked);
+          let resolved = false;
+          const finish = () => {
+            if (resolved) return;
+            resolved = true;
+            offscreenVideo.removeEventListener('seeked', finish);
+            clearTimeout(timeoutId);
             resolve();
           };
-          offscreenVideo.addEventListener('seeked', onSeeked);
-          offscreenVideo.currentTime = targetTime;
+          const timeoutId = setTimeout(finish, 85);
+          offscreenVideo.addEventListener('seeked', finish);
+          if (typeof (offscreenVideo as any).fastSeek === 'function') {
+            (offscreenVideo as any).fastSeek(targetTime);
+          } else {
+            offscreenVideo.currentTime = targetTime;
+          }
         });
 
         if (ctx) {
           ctx.drawImage(offscreenVideo, 0, 0, targetWidth, targetHeight);
           if ('createImageBitmap' in window) {
-            const bmp = await createImageBitmap(extractCanvas);
-            extracted.push(bmp);
+            try {
+              const bmp = await createImageBitmap(extractCanvas);
+              extracted.push(bmp);
+              // Progressive availability: begin rendering as soon as first batch is ready
+              if (extracted.length >= 6 && extracted.length % 4 === 0) {
+                targetRef.current = [...extracted];
+                setReady(true);
+              }
+            } catch {}
           }
         }
       }
 
-      if (isMounted() && extracted.length >= 8) {
+      // Cleanup DOM video element
+      if (offscreenVideo.parentNode) {
+        offscreenVideo.parentNode.removeChild(offscreenVideo);
+      }
+
+      if (isMounted() && extracted.length >= 6) {
         targetRef.current = extracted;
         setReady(true);
       }
@@ -542,9 +577,9 @@ export const HeroSection: React.FC = () => {
     const isMobile = isMobileDevice();
 
     if (isMobile) {
-      // On mobile devices, extract 32 lightweight frames of the intro creature
+      // On mobile devices, extract 24 lightweight frames of the intro creature
       // so device motion / tilt control is instant and zero-lag without heavy memory consumption
-      extractFrames(DARK_INTRO_VIDEO_URL, 32, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
+      extractFrames(DARK_INTRO_VIDEO_URL, 24, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
       return () => {
         isMounted = false;
         darkIntroFramesRef.current.forEach((bmp) => bmp.close());
@@ -583,9 +618,10 @@ export const HeroSection: React.FC = () => {
       // VIDEO 1 LIFECYCLE: EXPLORE -> REWINDING -> HANDOFF -> COMPLETE
       // =======================================================================
       if (introPhaseRef.current === 'EXPLORE') {
-        introSmoothedProgressRef.current +=
-          (introTargetProgressRef.current - introSmoothedProgressRef.current) * 0.14;
-        if (Math.abs(introTargetProgressRef.current - introSmoothedProgressRef.current) < 0.001) {
+        const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
+        const lerpFactor = Math.abs(diff) > 0.1 ? 0.2 : 0.12;
+        introSmoothedProgressRef.current += diff * lerpFactor;
+        if (Math.abs(diff) < 0.001) {
           introSmoothedProgressRef.current = introTargetProgressRef.current;
         }
       } else if (introPhaseRef.current === 'REWINDING') {
@@ -655,7 +691,11 @@ export const HeroSection: React.FC = () => {
           if (!v.seeking && v.readyState >= 2) {
             const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
             if (Math.abs(v.currentTime - targetTime) > 0.04) {
-              v.currentTime = targetTime;
+              if (typeof (v as any).fastSeek === 'function') {
+                (v as any).fastSeek(targetTime);
+              } else {
+                v.currentTime = targetTime;
+              }
             }
           }
         }
@@ -686,7 +726,11 @@ export const HeroSection: React.FC = () => {
           if (!v.seeking && v.readyState >= 2) {
             const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
             if (Math.abs(v.currentTime - targetTime) > 0.04) {
-              v.currentTime = targetTime;
+              if (typeof (v as any).fastSeek === 'function') {
+                (v as any).fastSeek(targetTime);
+              } else {
+                v.currentTime = targetTime;
+              }
             }
           }
         }
