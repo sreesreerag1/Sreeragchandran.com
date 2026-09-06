@@ -10,6 +10,9 @@ const DARK_INTRO_VIDEO_URL = '/videos/creature.mp4?v=3';
 const LIGHT_HERO_VIDEO_URL = '/videos/Hero_White.mp4?v=5';
 const LIGHT_INTRO_VIDEO_URL = '/videos/creature_White.mp4?v=3';
 
+const DARK_HERO_POSTER = '/videos/hero-poster.jpg';
+const DARK_CREATURE_POSTER = '/videos/creature-poster.jpg';
+
 const SERVICES = [
   '/ CREATIVE DIRECTION',
   '/ BRAND STRATEGY',
@@ -100,10 +103,10 @@ export const HeroSection: React.FC = () => {
 
   const scrollTargetProgressRef = useRef(0);
   const smoothedVideoProgressRef = useRef(0);
-  const darkHeroDurationRef = useRef(0);
-  const lightHeroDurationRef = useRef(0);
-  const darkIntroDurationRef = useRef(10.006);
-  const lightIntroDurationRef = useRef(10.006);
+  const darkHeroDurationRef = useRef(10.0);
+  const lightHeroDurationRef = useRef(10.0);
+  const darkIntroDurationRef = useRef(10.0);
+  const lightIntroDurationRef = useRef(10.0);
 
   // Resize canvas to match container or window with DPR cap of 2
   const handleResize = () => {
@@ -362,10 +365,19 @@ export const HeroSection: React.FC = () => {
     }
   };
 
-  // Preload and cache frames for both Dark and Light video moods
+  // Preload and cache frames for both Dark and Light video moods (Desktop only)
   useEffect(() => {
     let isMounted = true;
     const checkMounted = () => isMounted;
+
+    // Skip heavy background frame extraction on mobile to preserve device memory & battery
+    const isMobile =
+      typeof window !== 'undefined' &&
+      (window.innerWidth < 768 ||
+        'ontouchstart' in window ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
+
+    if (isMobile) return;
 
     // Extract dark theme frames first (default active theme)
     extractFrames(DARK_INTRO_VIDEO_URL, 48, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
@@ -594,7 +606,7 @@ export const HeroSection: React.FC = () => {
     >
       {/* Sticky Viewport Stage: Pinned at top: 0 during Phase 1, 2, and 3 */}
       <div
-        className={`sticky top-0 h-screen w-full overflow-hidden transition-colors duration-700 ${
+        className={`sticky top-0 h-screen h-[100dvh] w-full overflow-hidden transition-colors duration-700 ${
           isDark ? 'bg-[#050505]' : 'bg-[#FFFFFF]'
         }`}
       >
@@ -624,7 +636,7 @@ export const HeroSection: React.FC = () => {
           {/* =====================================================================
               TOP SECTION (100vh): CREATIVE PHILOSOPHY (Appears Above Video)
              ===================================================================== */}
-          <div className="relative h-screen w-full overflow-hidden bg-[#050505]">
+          <div className="relative h-screen h-[100dvh] w-full overflow-hidden bg-[#050505]">
             <CreativePhilosophy
               isHeroIntegrated={true}
               scrollProgress={philosophyProgress}
@@ -645,7 +657,7 @@ export const HeroSection: React.FC = () => {
               (Moves downward with user scroll and leaves the viewport at bottom)
              ===================================================================== */}
           <div
-            className={`relative h-screen w-full overflow-hidden flex flex-col justify-between pt-12 sm:pt-16 md:pt-20 pb-4 sm:pb-8 md:pb-12 md:px-14 lg:px-16 transition-colors duration-700 ${
+            className={`relative h-screen h-[100dvh] w-full overflow-hidden flex flex-col justify-between pt-12 sm:pt-16 md:pt-20 pb-4 sm:pb-8 md:pb-12 md:px-14 lg:px-16 transition-colors duration-700 ${
               isDark ? 'bg-[#050505] text-[#F5F5F5]' : 'bg-[#FFFFFF] text-[#3A3A3A]'
             }`}
           >
@@ -720,15 +732,18 @@ export const HeroSection: React.FC = () => {
                 >
                   <video
                     ref={videoDarkRef}
+                    src={DARK_HERO_VIDEO_URL}
+                    poster={DARK_HERO_POSTER}
                     muted
                     playsInline
                     preload="auto"
+                    onLoadedMetadata={(e) => {
+                      if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
+                    }}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-500 ${
                       !isDarkFramesReady ? 'opacity-100' : 'opacity-0'
                     }`}
-                  >
-                    <source src={DARK_HERO_VIDEO_URL} type="video/mp4" />
-                  </video>
+                  />
                   <canvas
                     ref={canvasDarkRef}
                     className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
@@ -744,15 +759,17 @@ export const HeroSection: React.FC = () => {
                 >
                   <video
                     ref={videoLightRef}
+                    src={LIGHT_HERO_VIDEO_URL}
                     muted
                     playsInline
-                    preload="auto"
+                    preload={isDark ? 'none' : 'auto'}
+                    onLoadedMetadata={(e) => {
+                      if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
+                    }}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-500 ${
                       !isLightFramesReady ? 'opacity-100' : 'opacity-0'
                     }`}
-                  >
-                    <source src={LIGHT_HERO_VIDEO_URL} type="video/mp4" />
-                  </video>
+                  />
                   <canvas
                     ref={canvasLightRef}
                     className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
@@ -776,9 +793,13 @@ export const HeroSection: React.FC = () => {
                   <video
                     ref={introVideoDarkRef}
                     src={DARK_INTRO_VIDEO_URL}
+                    poster={DARK_CREATURE_POSTER}
                     muted
                     playsInline
                     preload="auto"
+                    onLoadedMetadata={(e) => {
+                      if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
+                    }}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-300 ${
                       isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
@@ -801,7 +822,10 @@ export const HeroSection: React.FC = () => {
                     src={LIGHT_INTRO_VIDEO_URL}
                     muted
                     playsInline
-                    preload="auto"
+                    preload={isDark ? 'none' : 'auto'}
+                    onLoadedMetadata={(e) => {
+                      if (e.currentTarget.duration) lightIntroDurationRef.current = e.currentTarget.duration;
+                    }}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-300 ${
                       isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}

@@ -147,6 +147,15 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
     let isMounted = true;
 
     const startExtraction = async () => {
+      // On mobile devices, avoid heavy background frame extraction to prevent WebKit memory exhaustion
+      const isMobile =
+        typeof window !== 'undefined' &&
+        (window.innerWidth < 768 ||
+          'ontouchstart' in window ||
+          (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
+
+      if (isMobile) return;
+
       if (isExtractingRef.current || framesRef.current.length > 0) return;
       isExtractingRef.current = true;
 
