@@ -65,14 +65,12 @@ export const HeroSection: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Video 2: Hero scroll-scrubbed layers (Dark & Light)
-  const canvasDarkRef = useRef<HTMLCanvasElement>(null);
-  const canvasLightRef = useRef<HTMLCanvasElement>(null);
   const videoDarkRef = useRef<HTMLVideoElement>(null);
   const videoLightRef = useRef<HTMLVideoElement>(null);
-  const darkFramesRef = useRef<CanvasImageSource[]>([]);
-  const lightFramesRef = useRef<CanvasImageSource[]>([]);
-  const [isDarkFramesReady, setIsDarkFramesReady] = useState(false);
-  const [isLightFramesReady, setIsLightFramesReady] = useState(false);
+  const isDarkHeroSeekingRef = useRef(false);
+  const lastDarkHeroSeekTimeRef = useRef(0);
+  const isLightHeroSeekingRef = useRef(false);
+  const lastLightHeroSeekTimeRef = useRef(0);
 
   // Video 1: Intro creature hover layers (Dark & Light)
   const introContainerRef = useRef<HTMLDivElement>(null);
@@ -140,7 +138,7 @@ export const HeroSection: React.FC = () => {
     const parent = containerRef.current?.querySelector('.sticky');
     const width = parent && parent.clientWidth > 0 ? parent.clientWidth : window.innerWidth;
     const height = parent && parent.clientHeight > 0 ? parent.clientHeight : window.innerHeight;
-    [canvasDarkRef, canvasLightRef, introCanvasDarkRef, introCanvasLightRef].forEach((ref) => {
+    [introCanvasDarkRef, introCanvasLightRef].forEach((ref) => {
       if (ref.current) {
         ref.current.width = width * dpr;
         ref.current.height = height * dpr;
@@ -173,40 +171,23 @@ export const HeroSection: React.FC = () => {
       // Downward push into next section (1800px -> 2600px)
       // =========================================================================
 
-      // 0. Intro Video (Video 1) Rewind & Transition Trigger:
+      // 0. Intro Video (Video 1) Transition Trigger:
       if (currentScroll > 3) {
-        if (introPhaseRef.current === 'EXPLORE') {
-          if (isMobileDevice() || currentScroll > 60) {
-            // Instant seamless transition on mobile or during fast scroll on desktop
-            introPhaseRef.current = 'COMPLETE';
-            isTransitionCompleteRef.current = true;
-            setIsAtTop(false);
-            if (introVideoDarkRef.current) introVideoDarkRef.current.pause();
-            if (introVideoLightRef.current) introVideoLightRef.current.pause();
-            if (introContainerRef.current) {
-              introContainerRef.current.style.transition = 'opacity 250ms ease-out';
-              introContainerRef.current.style.opacity = '0';
-              setTimeout(() => {
-                if (introContainerRef.current && introPhaseRef.current === 'COMPLETE') {
-                  introContainerRef.current.style.visibility = 'hidden';
-                }
-              }, 260);
-            }
-          } else {
-            // Desktop gentle scroll: trigger rapid smooth rewind back to frame 0 via pre-cached canvas
-            introPhaseRef.current = 'REWINDING';
-            rewindStartProgressRef.current = introSmoothedProgressRef.current;
-            rewindStartTimeRef.current = performance.now();
-            rewindDurationRef.current = Math.max(250, Math.min(380, rewindStartProgressRef.current * 420));
-            setIsAtTop(false);
-          }
-        } else if (introPhaseRef.current === 'REWINDING' && currentScroll > 60) {
-          // Fast-scroll during rewind: complete handoff immediately to avoid video seek jump
+        if (introPhaseRef.current !== 'COMPLETE') {
           introPhaseRef.current = 'COMPLETE';
+          introSmoothedProgressRef.current = 0;
           isTransitionCompleteRef.current = true;
+          setIsAtTop(false);
+          if (introVideoDarkRef.current) introVideoDarkRef.current.pause();
+          if (introVideoLightRef.current) introVideoLightRef.current.pause();
           if (introContainerRef.current) {
+            introContainerRef.current.style.transition = 'opacity 250ms ease-out';
             introContainerRef.current.style.opacity = '0';
-            introContainerRef.current.style.visibility = 'hidden';
+            setTimeout(() => {
+              if (introContainerRef.current && introPhaseRef.current === 'COMPLETE') {
+                introContainerRef.current.style.visibility = 'hidden';
+              }
+            }, 260);
           }
         }
       } else if (currentScroll <= 2) {
@@ -227,10 +208,8 @@ export const HeroSection: React.FC = () => {
         }
       }
 
-      // 1. Continuous Video Scrub: 0.0 to 1.0 (activated immediately once handoff begins)
-      const videoTarget = (isTransitionCompleteRef.current || currentScroll > 60)
-        ? Math.min(1.0, currentScroll / 1550)
-        : 0;
+      // 1. Continuous Video Scrub: 0.0 to 1.0 (activated immediately once user scrolls)
+      const videoTarget = Math.min(1.0, currentScroll / 1550);
       scrollTargetProgressRef.current = videoTarget;
 
       // 2. Scroll-Linked Typography Evolution (while video is playing):
@@ -413,17 +392,6 @@ export const HeroSection: React.FC = () => {
     };
 
     // Desktop wheel rewind trigger
-    const handleWheel = (e: WheelEvent) => {
-      if (introPhaseRef.current === 'EXPLORE' && e.deltaY > 0) {
-        // First wheel input detected: immediately trigger rapid rewind
-        introPhaseRef.current = 'REWINDING';
-        rewindStartProgressRef.current = introSmoothedProgressRef.current;
-        rewindStartTimeRef.current = performance.now();
-        rewindDurationRef.current = Math.max(250, Math.min(380, rewindStartProgressRef.current * 420));
-        setIsAtTop(false);
-      }
-    };
-
     const handleTouchMove = (e: TouchEvent) => {
       if (introPhaseRef.current !== 'EXPLORE') return;
       // If motion is actively streaming real tilt data, do not let touch drag conflict
@@ -436,7 +404,6 @@ export const HeroSection: React.FC = () => {
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('wheel', handleWheel, { passive: true });
 
     // Standard mobile browsers (Android Chrome, etc.): listen directly on mount
     if (
@@ -453,7 +420,6 @@ export const HeroSection: React.FC = () => {
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('deviceorientation', handleOrientation);
       window.removeEventListener('click', requestMotionPermission);
       window.removeEventListener('touchend', requestMotionPermission);
@@ -629,15 +595,13 @@ export const HeroSection: React.FC = () => {
       };
     }
 
-    // Extract dark theme frames first (default active theme)
+    // On Desktop: extract dark theme creature intro frames
     extractFrames(DARK_INTRO_VIDEO_URL, 48, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
-    extractFrames(DARK_HERO_VIDEO_URL, 72, darkFramesRef, darkHeroDurationRef, setIsDarkFramesReady, checkMounted);
 
-    // Preload light theme frames shortly after
+    // Preload light theme creature frames shortly after
     const timer = setTimeout(() => {
       if (!isMounted) return;
       extractFrames(LIGHT_INTRO_VIDEO_URL, 48, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
-      extractFrames(LIGHT_HERO_VIDEO_URL, 72, lightFramesRef, lightHeroDurationRef, setIsLightFramesReady, checkMounted);
     }, 450);
 
     return () => {
@@ -647,12 +611,6 @@ export const HeroSection: React.FC = () => {
         if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
       });
       lightIntroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
-      darkFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
-      lightFramesRef.current.forEach((bmp) => {
         if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
       });
     };
@@ -806,71 +764,29 @@ export const HeroSection: React.FC = () => {
 
       const smoothed = smoothedVideoProgressRef.current;
 
-      // Dark Hero:
-      if (canvasDarkRef.current && darkFramesRef.current.length > 0) {
-        const darkFrames = darkFramesRef.current;
-        const frameIndex = Math.min(
-          darkFrames.length - 1,
-          Math.max(0, Math.round(smoothed * (darkFrames.length - 1)))
-        );
-        const frame = darkFrames[frameIndex];
-        if (frame) {
-          const ctx = canvasDarkRef.current.getContext('2d');
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            const fWidth = (frame as any).width || 1920;
-            const fHeight = (frame as any).height || 1080;
-            const bounds = calculateDrawBounds(
-              canvasDarkRef.current.width,
-              canvasDarkRef.current.height,
-              fWidth,
-              fHeight
-            );
-            ctx.clearRect(0, 0, canvasDarkRef.current.width, canvasDarkRef.current.height);
-            ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-          }
-        }
-      } else if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
+      // Dark Hero: Direct hardware-accelerated video scrub with seek watchdog
+      if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
         const v = videoDarkRef.current;
-        if (!v.seeking && v.readyState >= 2) {
+        const isBusy = (v.seeking || isDarkHeroSeekingRef.current) && (now - lastDarkHeroSeekTimeRef.current < 70);
+        if (!isBusy && v.readyState >= 1) {
           const targetTime = smoothed * Math.max(0, darkHeroDurationRef.current - 0.05);
-          if (Math.abs(v.currentTime - targetTime) > 0.04) {
+          if (Math.abs(v.currentTime - targetTime) > 0.02) {
+            isDarkHeroSeekingRef.current = true;
+            lastDarkHeroSeekTimeRef.current = now;
             v.currentTime = targetTime;
           }
         }
       }
 
-      // Light Hero:
-      if (canvasLightRef.current && lightFramesRef.current.length > 0) {
-        const lightFrames = lightFramesRef.current;
-        const frameIndex = Math.min(
-          lightFrames.length - 1,
-          Math.max(0, Math.round(smoothed * (lightFrames.length - 1)))
-        );
-        const frame = lightFrames[frameIndex];
-        if (frame) {
-          const ctx = canvasLightRef.current.getContext('2d');
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            const fWidth = (frame as any).width || 1920;
-            const fHeight = (frame as any).height || 1080;
-            const bounds = calculateDrawBounds(
-              canvasLightRef.current.width,
-              canvasLightRef.current.height,
-              fWidth,
-              fHeight
-            );
-            ctx.clearRect(0, 0, canvasLightRef.current.width, canvasLightRef.current.height);
-            ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-          }
-        }
-      } else if (videoLightRef.current && lightHeroDurationRef.current > 0) {
+      // Light Hero: Direct hardware-accelerated video scrub with seek watchdog
+      if (videoLightRef.current && lightHeroDurationRef.current > 0) {
         const v = videoLightRef.current;
-        if (!v.seeking && v.readyState >= 2) {
+        const isBusy = (v.seeking || isLightHeroSeekingRef.current) && (now - lastLightHeroSeekTimeRef.current < 70);
+        if (!isBusy && v.readyState >= 1) {
           const targetTime = smoothed * Math.max(0, lightHeroDurationRef.current - 0.05);
-          if (Math.abs(v.currentTime - targetTime) > 0.04) {
+          if (Math.abs(v.currentTime - targetTime) > 0.02) {
+            isLightHeroSeekingRef.current = true;
+            lastLightHeroSeekTimeRef.current = now;
             v.currentTime = targetTime;
           }
         }
@@ -1027,15 +943,13 @@ export const HeroSection: React.FC = () => {
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
                     }}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-500 ${
-                      !isDarkFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  />
-                  <canvas
-                    ref={canvasDarkRef}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
-                      isDarkFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    onLoadedData={(e) => {
+                      if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
+                    }}
+                    onSeeked={() => {
+                      isDarkHeroSeekingRef.current = false;
+                    }}
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-500 opacity-100"
                   />
                 </div>
 
@@ -1053,15 +967,13 @@ export const HeroSection: React.FC = () => {
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
                     }}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-500 ${
-                      !isLightFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  />
-                  <canvas
-                    ref={canvasLightRef}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
-                      isLightFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    onLoadedData={(e) => {
+                      if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
+                    }}
+                    onSeeked={() => {
+                      isLightHeroSeekingRef.current = false;
+                    }}
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-500 opacity-100"
                   />
                 </div>
               </div>
