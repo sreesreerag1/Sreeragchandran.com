@@ -97,9 +97,8 @@ export const HeroSection: React.FC = () => {
   const introSmoothedProgressRef = useRef(0.2);
   const [isAtTop, setIsAtTop] = useState(true);
 
-  // Transition & phase states
-  const [pushProgress, setPushProgress] = useState(0);
-  const [philosophyProgress, setPhilosophyProgress] = useState(0);
+  // Direct DOM ref for buttery-smooth hardware-accelerated downward push transition (zero React re-renders)
+  const pushContainerRef = useRef<HTMLDivElement>(null);
   const [showCue, setShowCue] = useState(false);
   const [cueText, setCueText] = useState('');
 
@@ -158,8 +157,8 @@ export const HeroSection: React.FC = () => {
       // 0. Intro Video (Video 1) Rewind & Transition Trigger:
       if (currentScroll > 3) {
         if (introPhaseRef.current === 'EXPLORE') {
-          if (isMobileDevice()) {
-            // Instant seamless transition on mobile devices without frame rewinding lag
+          if (isMobileDevice() || currentScroll > 60) {
+            // Instant seamless transition on mobile or during fast scroll on desktop
             introPhaseRef.current = 'COMPLETE';
             isTransitionCompleteRef.current = true;
             setIsAtTop(false);
@@ -175,12 +174,20 @@ export const HeroSection: React.FC = () => {
               }, 260);
             }
           } else {
-            // Desktop: trigger rapid smooth rewind back to frame 0 via pre-cached canvas
+            // Desktop gentle scroll: trigger rapid smooth rewind back to frame 0 via pre-cached canvas
             introPhaseRef.current = 'REWINDING';
             rewindStartProgressRef.current = introSmoothedProgressRef.current;
             rewindStartTimeRef.current = performance.now();
             rewindDurationRef.current = Math.max(250, Math.min(380, rewindStartProgressRef.current * 420));
             setIsAtTop(false);
+          }
+        } else if (introPhaseRef.current === 'REWINDING' && currentScroll > 60) {
+          // Fast-scroll during rewind: complete handoff immediately to avoid video seek jump
+          introPhaseRef.current = 'COMPLETE';
+          isTransitionCompleteRef.current = true;
+          if (introContainerRef.current) {
+            introContainerRef.current.style.opacity = '0';
+            introContainerRef.current.style.visibility = 'hidden';
           }
         }
       } else if (currentScroll <= 2) {
@@ -201,8 +208,8 @@ export const HeroSection: React.FC = () => {
         }
       }
 
-      // 1. Continuous Video Scrub: 0.0 to 1.0 (activated only after Video 1 reaches frame 0)
-      const videoTarget = isTransitionCompleteRef.current
+      // 1. Continuous Video Scrub: 0.0 to 1.0 (activated immediately once handoff begins)
+      const videoTarget = (isTransitionCompleteRef.current || currentScroll > 60)
         ? Math.min(1.0, currentScroll / 1550)
         : 0;
       scrollTargetProgressRef.current = videoTarget;
@@ -261,22 +268,21 @@ export const HeroSection: React.FC = () => {
         setCueText(newText);
       }
 
-      // 4. Downward Push Progress (1800px -> 2600px)
+      // 4. Downward Push Progress (1800px -> 2600px):
+      // Direct DOM transform with zero CSS transition interference and zero React state lag
       const pushEnd = 2600;
       let push = 0;
       if (currentScroll > pushStart) {
         push = Math.min(1.0, (currentScroll - pushStart) / (pushEnd - pushStart));
       }
-      setPushProgress(push);
+      const easedPush =
+        push < 0.5
+          ? 4 * push * push * push
+          : 1 - Math.pow(-2 * push + 2, 3) / 2;
 
-      // 5. Section 01: Creative Philosophy Video Scroll Scrub (2600px -> 4800px)
-      const philosophyStart = 2600;
-      const philosophyEnd = 4800;
-      let philProgress = 0;
-      if (currentScroll > philosophyStart) {
-        philProgress = Math.min(1.0, (currentScroll - philosophyStart) / (philosophyEnd - philosophyStart));
+      if (pushContainerRef.current) {
+        pushContainerRef.current.style.transform = `translate3d(0, calc(-100vh + ${(easedPush * 100).toFixed(3)}vh), 0)`;
       }
-      setPhilosophyProgress(philProgress);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -598,8 +604,10 @@ export const HeroSection: React.FC = () => {
 
       // 2. Main Hero Scroll Scrubbing: Synchronously update both Dark & Light layers
       const target = scrollTargetProgressRef.current;
+      const delta = Math.abs(target - smoothedVideoProgressRef.current);
+      const lerpFactor = delta > 0.25 ? 0.45 : 0.16;
       smoothedVideoProgressRef.current +=
-        (target - smoothedVideoProgressRef.current) * 0.16;
+        (target - smoothedVideoProgressRef.current) * lerpFactor;
 
       if (Math.abs(target - smoothedVideoProgressRef.current) < 0.002) {
         smoothedVideoProgressRef.current = target;
@@ -679,12 +687,6 @@ export const HeroSection: React.FC = () => {
     };
   }, []);
 
-  // Smooth cubic easing for physical downward push transition
-  const easedPush =
-    pushProgress < 0.5
-      ? 4 * pushProgress * pushProgress * pushProgress
-      : 1 - Math.pow(-2 * pushProgress + 2, 3) / 2;
-
   return (
     /* Outer Pinned Scroll Track: Controls Video Scrubbing (Phase 1), Text Storytelling (Phase 2), and Downward Push (Phase 3) */
     <div
@@ -704,31 +706,29 @@ export const HeroSection: React.FC = () => {
             --------------------------------------------------------
             [ BOTTOM 100vh ]: FINAL VIDEO FRAME (moves downward and leaves viewport)
             
-            Initial position (pushProgress = 0):
+            Initial position:
               translateY: -100vh -> Bottom 100vh (Video) fills the viewport.
-            As pushProgress advances (0 -> 1):
+            As downward push advances (0 -> 1):
               translateY: calc(-100vh + (easedPush * 100vh)).
               Video moves DOWNWARD out through the bottom.
               About section moves DOWNWARD into the viewport from above.
-            At pushProgress = 1:
+            At downward push completion:
               translateY: 0vh -> About section fills the viewport.
               Video is at +100vh (completely exited viewport).
            ========================================================================= */}
         <div
-          className="relative w-full transition-transform duration-75 ease-out"
+          ref={pushContainerRef}
+          className="relative w-full will-change-transform"
           style={{
             height: '200vh',
-            transform: `translateY(calc(-100vh + ${easedPush * 100}vh))`,
+            transform: 'translate3d(0, -100vh, 0)',
           }}
         >
           {/* =====================================================================
               TOP SECTION (100vh): CREATIVE PHILOSOPHY (Appears Above Video)
              ===================================================================== */}
           <div className="relative h-screen h-[100dvh] w-full overflow-hidden bg-[#050505]">
-            <CreativePhilosophy
-              isHeroIntegrated={true}
-              scrollProgress={philosophyProgress}
-            />
+            <CreativePhilosophy isHeroIntegrated={true} />
           </div>
 
           {/* =====================================================================

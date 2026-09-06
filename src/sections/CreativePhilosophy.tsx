@@ -266,8 +266,13 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
     const render = () => {
       const target = scrollTargetRef.current;
-      // Weighted lerp for Apple-style smooth glide
-      smoothedProgressRef.current += (target - smoothedProgressRef.current) * 0.12;
+      const delta = Math.abs(target - smoothedProgressRef.current);
+      const factor = delta > 0.2 ? 0.36 : 0.12;
+      smoothedProgressRef.current += (target - smoothedProgressRef.current) * factor;
+
+      if (Math.abs(target - smoothedProgressRef.current) < 0.002) {
+        smoothedProgressRef.current = target;
+      }
       const smooth = smoothedProgressRef.current;
 
       // 1. Direct HTML5 video scrubbing (0 -> 100% timeline)

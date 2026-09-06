@@ -27,7 +27,9 @@ export const MarqueeGallery: React.FC = () => {
       const currentScrollY = window.scrollY || window.pageYOffset;
       const delta = currentScrollY - lastScrollY;
       lastScrollY = currentScrollY;
-      scrollVelocity += delta * 0.12;
+      scrollVelocity += delta * 0.08;
+      // Cap scroll velocity so fast scroll flings don't cause jitter or visual skips
+      scrollVelocity = Math.max(-25, Math.min(25, scrollVelocity));
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -45,11 +47,11 @@ export const MarqueeGallery: React.FC = () => {
       const loopWidth1 = row1Ref.current ? row1Ref.current.scrollWidth / 3 : 3136;
       const loopWidth2 = row2Ref.current ? row2Ref.current.scrollWidth / 3 : 2688;
 
-      if (offset1 > 0) offset1 -= loopWidth1;
-      if (offset1 < -loopWidth1) offset1 += loopWidth1;
+      while (offset1 > 0) offset1 -= loopWidth1;
+      while (offset1 < -loopWidth1) offset1 += loopWidth1;
 
-      if (offset2 < -loopWidth2) offset2 += loopWidth2;
-      if (offset2 > 0) offset2 -= loopWidth2;
+      while (offset2 < -loopWidth2) offset2 += loopWidth2;
+      while (offset2 > 0) offset2 -= loopWidth2;
 
       if (row1Ref.current) {
         row1Ref.current.style.transform = `translate3d(${offset1.toFixed(2)}px, 0, 0)`;
