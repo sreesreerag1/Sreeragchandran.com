@@ -296,23 +296,17 @@ export const HeroSection: React.FC = () => {
     };
   }, []);
 
-  // Intro video mouse hover, touch, and wheel listeners
+  // Intro video controller: Mouse hover on Desktop, Device Motion (Gyroscope Tilt) on Mobile
   useEffect(() => {
+    // Desktop mouse hover controller
     const handleMouseMove = (e: MouseEvent) => {
+      if (isMobileDevice()) return;
       if (introPhaseRef.current !== 'EXPLORE') return;
       const xNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
       introTargetProgressRef.current = xNorm;
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isMobileDevice()) return;
-      if (introPhaseRef.current !== 'EXPLORE') return;
-      if (e.touches && e.touches.length > 0) {
-        const xNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
-        introTargetProgressRef.current = xNorm;
-      }
-    };
-
+    // Desktop wheel rewind trigger
     const handleWheel = (e: WheelEvent) => {
       if (introPhaseRef.current === 'EXPLORE' && e.deltaY > 0) {
         // First wheel input detected: immediately trigger rapid rewind
@@ -324,21 +318,64 @@ export const HeroSection: React.FC = () => {
       }
     };
 
+    // Mobile Device Orientation Motion Controller (Gyroscope Tilt)
+    // Tilting phone left turns creature head left; tilting right turns head right
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (!isMobileDevice()) return;
+      if (introPhaseRef.current !== 'EXPLORE') return;
+      if (e.gamma !== null && typeof e.gamma === 'number') {
+        // gamma: left-to-right tilt in degrees (-90 to +90)
+        // Neutral holding upright: gamma ≈ 0
+        // Tilting left: negative (clamped to -25°)
+        // Tilting right: positive (clamped to +25°)
+        const clampedGamma = Math.max(-25, Math.min(25, e.gamma));
+        // Map: tilt left -> 1.0 (creature looks left), tilt right -> 0.0 (creature looks right)
+        const tiltNorm = 1 - (clampedGamma + 25) / 50;
+        introTargetProgressRef.current = tiltNorm;
+      }
+    };
+
+    // Request motion permission on iOS 13+ on user interaction
+    const requestMotionPermission = async () => {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+      ) {
+        try {
+          const perm = await (DeviceOrientationEvent as any).requestPermission();
+          if (perm === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+          }
+        } catch {}
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('wheel', handleWheel, { passive: true });
+
+    // Attach orientation listener
+    if (
+      typeof DeviceOrientationEvent === 'undefined' ||
+      typeof (DeviceOrientationEvent as any).requestPermission !== 'function'
+    ) {
+      // Android and standard browsers: listen directly
+      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+    }
+    // iOS: request on first user interaction
+    window.addEventListener('touchstart', requestMotionPermission, { once: true, passive: true });
+    window.addEventListener('click', requestMotionPermission, { once: true, passive: true });
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('touchstart', requestMotionPermission);
+      window.removeEventListener('click', requestMotionPermission);
     };
   }, []);
 
   // Media unlock & decoder priming for iOS Safari & Android mobile decoders
   useEffect(() => {
-    const isMobile = isMobileDevice();
-
     const unlockVideos = () => {
       const videos = [
         introVideoDarkRef.current,
@@ -349,18 +386,11 @@ export const HeroSection: React.FC = () => {
       videos.forEach((vid) => {
         if (!vid) return;
         vid.muted = true;
-        // On mobile: autoplay active creature intro, prime hero walking video
-        if (isMobile && ((vid === introVideoDarkRef.current && isDark) || (vid === introVideoLightRef.current && !isDark))) {
-          if (vid.paused && introPhaseRef.current === 'EXPLORE') {
-            vid.play().catch(() => {});
-          }
-        } else {
-          const p = vid.play();
-          if (p !== undefined) {
-            p.then(() => {
-              vid.pause();
-            }).catch(() => {});
-          }
+        const p = vid.play();
+        if (p !== undefined) {
+          p.then(() => {
+            vid.pause();
+          }).catch(() => {});
         }
       });
     };
@@ -448,14 +478,17 @@ export const HeroSection: React.FC = () => {
     let isMounted = true;
     const checkMounted = () => isMounted;
 
-    // Skip heavy background frame extraction on mobile to preserve device memory & battery
-    const isMobile =
-      typeof window !== 'undefined' &&
-      (window.innerWidth < 768 ||
-        'ontouchstart' in window ||
-        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
+    const isMobile = isMobileDevice();
 
-    if (isMobile) return;
+    if (isMobile) {
+      // On mobile devices, extract 32 lightweight frames of the intro creature
+      // so device motion / tilt control is instant and zero-lag without heavy memory consumption
+      extractFrames(DARK_INTRO_VIDEO_URL, 32, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
+      return () => {
+        isMounted = false;
+        darkIntroFramesRef.current.forEach((bmp) => bmp.close());
+      };
+    }
 
     // Extract dark theme frames first (default active theme)
     extractFrames(DARK_INTRO_VIDEO_URL, 48, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
@@ -557,13 +590,11 @@ export const HeroSection: React.FC = () => {
             }
           }
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
-          if (!isMobileDevice()) {
-            const v = introVideoDarkRef.current;
-            if (!v.seeking && v.readyState >= 2) {
-              const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
-              if (Math.abs(v.currentTime - targetTime) > 0.04) {
-                v.currentTime = targetTime;
-              }
+          const v = introVideoDarkRef.current;
+          if (!v.seeking && v.readyState >= 2) {
+            const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
+            if (Math.abs(v.currentTime - targetTime) > 0.04) {
+              v.currentTime = targetTime;
             }
           }
         }
@@ -590,13 +621,11 @@ export const HeroSection: React.FC = () => {
             }
           }
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
-          if (!isMobileDevice()) {
-            const v = introVideoLightRef.current;
-            if (!v.seeking && v.readyState >= 2) {
-              const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
-              if (Math.abs(v.currentTime - targetTime) > 0.04) {
-                v.currentTime = targetTime;
-              }
+          const v = introVideoLightRef.current;
+          if (!v.seeking && v.readyState >= 2) {
+            const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
+            if (Math.abs(v.currentTime - targetTime) > 0.04) {
+              v.currentTime = targetTime;
             }
           }
         }
@@ -882,8 +911,6 @@ export const HeroSection: React.FC = () => {
                     ref={introVideoDarkRef}
                     src={DARK_INTRO_VIDEO_URL}
                     poster={DARK_CREATURE_POSTER}
-                    autoPlay
-                    loop
                     muted
                     playsInline
                     preload="auto"
@@ -910,8 +937,6 @@ export const HeroSection: React.FC = () => {
                   <video
                     ref={introVideoLightRef}
                     src={LIGHT_INTRO_VIDEO_URL}
-                    autoPlay
-                    loop
                     muted
                     playsInline
                     preload={isDark ? 'none' : 'auto'}
