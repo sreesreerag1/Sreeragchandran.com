@@ -49,13 +49,12 @@ const calculateDrawBounds = (
   return { shiftX, shiftY, drawWidth, drawHeight };
 };
 
-// Helper to detect mobile devices
-const isMobileDevice = () =>
-  typeof window !== 'undefined' &&
-  (window.innerWidth < 768 ||
-    'ontouchstart' in window ||
-    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
-    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+// Helper to detect handheld mobile devices (phones/tablets only, never desktop)
+const isMobileDevice = () => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && 'ontouchend' in document);
+};
 
 export const HeroSection: React.FC = () => {
   // Visual Mood Theme: 'dark' (default) vs 'light'
@@ -94,7 +93,7 @@ export const HeroSection: React.FC = () => {
   const introSmoothedProgressRef = useRef(0.5);
   const [isAtTop, setIsAtTop] = useState(true);
 
-  // iOS Safari Motion & Gyro Permission state
+  // iOS Safari Motion & Gyro Permission state (Mobile only)
   const [isMotionPermNeeded, setIsMotionPermNeeded] = useState(false);
   const [isMotionActive, setIsMotionActive] = useState(false);
   const isMotionActiveRef = useRef(false);
@@ -105,7 +104,9 @@ export const HeroSection: React.FC = () => {
   const isLightSeekingRef = useRef(false);
 
   useEffect(() => {
+    // Only check or request motion permissions on real mobile devices
     if (
+      isMobileDevice() &&
       typeof window !== 'undefined' &&
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof (DeviceOrientationEvent as any).requestPermission === 'function'
@@ -385,13 +386,11 @@ export const HeroSection: React.FC = () => {
   useEffect(() => {
     // Desktop mouse hover controller
     const handleMouseMove = (e: MouseEvent) => {
-      if (isMobileDevice()) return;
       if (introPhaseRef.current !== 'EXPLORE') return;
       const xNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
       introTargetProgressRef.current = xNorm;
     };
 
-    // Desktop wheel rewind trigger
     const handleTouchMove = (e: TouchEvent) => {
       if (introPhaseRef.current !== 'EXPLORE') return;
       // If motion is actively streaming real tilt data, do not let touch drag conflict
@@ -407,21 +406,22 @@ export const HeroSection: React.FC = () => {
 
     // Standard mobile browsers (Android Chrome, etc.): listen directly on mount
     if (
-      typeof DeviceOrientationEvent === 'undefined' ||
-      typeof (DeviceOrientationEvent as any).requestPermission !== 'function'
+      isMobileDevice() &&
+      (typeof DeviceOrientationEvent === 'undefined' ||
+        typeof (DeviceOrientationEvent as any).requestPermission !== 'function')
     ) {
       window.addEventListener('deviceorientation', handleOrientation, { passive: true });
     }
 
-    // iOS WebKit: listen on click and touchend
-    window.addEventListener('click', requestMotionPermission, { passive: true });
-    window.addEventListener('touchend', requestMotionPermission, { passive: true });
+    // iOS WebKit mobile: listen on touchend on mobile devices only
+    if (isMobileDevice()) {
+      window.addEventListener('touchend', requestMotionPermission, { passive: true });
+    }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('click', requestMotionPermission);
       window.removeEventListener('touchend', requestMotionPermission);
     };
   }, [handleOrientation, requestMotionPermission]);
@@ -587,32 +587,27 @@ export const HeroSection: React.FC = () => {
       // On mobile devices, extract 24 lightweight frames of the intro creature
       // so device motion / tilt control is instant and zero-lag without heavy memory consumption
       extractFrames(DARK_INTRO_VIDEO_URL, 24, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
+      const timer = setTimeout(() => {
+        if (!isMounted) return;
+        extractFrames(LIGHT_INTRO_VIDEO_URL, 24, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
+      }, 500);
+
       return () => {
         isMounted = false;
+        clearTimeout(timer);
         darkIntroFramesRef.current.forEach((bmp) => {
+          if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
+        });
+        lightIntroFramesRef.current.forEach((bmp) => {
           if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
         });
       };
     }
 
-    // On Desktop: extract dark theme creature intro frames
-    extractFrames(DARK_INTRO_VIDEO_URL, 48, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
-
-    // Preload light theme creature frames shortly after
-    const timer = setTimeout(() => {
-      if (!isMounted) return;
-      extractFrames(LIGHT_INTRO_VIDEO_URL, 48, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
-    }, 450);
-
+    // On Desktop: Creature video scrubs directly via native hardware-accelerated <video> element.
+    // Zero canvas extraction required, eliminating memory overhead and seek timeouts.
     return () => {
       isMounted = false;
-      clearTimeout(timer);
-      darkIntroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
-      lightIntroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
     };
   }, []);
 
@@ -701,8 +696,8 @@ export const HeroSection: React.FC = () => {
           }
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
           const v = introVideoDarkRef.current;
-          const isBusy = (v.seeking || isDarkSeekingRef.current) && (now - lastDarkSeekTimeRef.current < 120);
-          if (!isBusy && v.readyState >= 2) {
+          const isBusy = (v.seeking || isDarkSeekingRef.current) && (now - lastDarkSeekTimeRef.current < 70);
+          if (!isBusy && v.readyState >= 1) {
             const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
             if (Math.abs(v.currentTime - targetTime) > 0.02) {
               isDarkSeekingRef.current = true;
@@ -739,8 +734,8 @@ export const HeroSection: React.FC = () => {
           }
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
           const v = introVideoLightRef.current;
-          const isBusy = (v.seeking || isLightSeekingRef.current) && (now - lastLightSeekTimeRef.current < 120);
-          if (!isBusy && v.readyState >= 2) {
+          const isBusy = (v.seeking || isLightSeekingRef.current) && (now - lastLightSeekTimeRef.current < 70);
+          if (!isBusy && v.readyState >= 1) {
             const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
             if (Math.abs(v.currentTime - targetTime) > 0.02) {
               isLightSeekingRef.current = true;
@@ -1299,7 +1294,7 @@ export const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Interactive Prompt / Motion Activator for Mobile */}
+            {/* Interactive Prompt: Mobile shows tilt/motion prompt; Desktop strictly shows clean hover cue */}
             <div
               className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-all duration-300 pointer-events-auto ${
                 isDark
@@ -1309,28 +1304,40 @@ export const HeroSection: React.FC = () => {
                 isAtTop && !showCue ? 'opacity-100' : 'opacity-0'
               }`}
             >
-              {isMotionPermNeeded ? (
-                <button
-                  type="button"
-                  onClick={requestMotionPermission}
-                  className="flex items-center gap-2 cursor-pointer font-bold tracking-[0.24em] text-white hover:text-[#C8C1B5] transition-colors"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>TAP TO ACTIVATE MOTION TILT ✦</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2.5 pointer-events-none">
-                  <span
-                    className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
-                      isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
-                    }`}
-                  />
-                  <span className="md:hidden">
-                    {isMotionActive ? 'TILT DEVICE ↔ EXPLORE' : 'SWIPE OR TILT ↔ EXPLORE'}
-                  </span>
-                  <span className="hidden md:inline">HOVER ↔ EXPLORE SCENE</span>
-                </div>
-              )}
+              {/* Mobile Only: Motion Tilt Permission Button / Swipe Prompt */}
+              <div className="md:hidden">
+                {isMotionPermNeeded ? (
+                  <button
+                    type="button"
+                    onClick={requestMotionPermission}
+                    className="flex items-center gap-2 cursor-pointer font-bold tracking-[0.24em] text-white hover:text-[#C8C1B5] transition-colors"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>TAP TO ACTIVATE MOTION TILT ✦</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2.5 pointer-events-none">
+                    <span
+                      className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
+                        isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
+                      }`}
+                    />
+                    <span>
+                      {isMotionActive ? 'TILT DEVICE ↔ EXPLORE' : 'SWIPE OR TILT ↔ EXPLORE'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Only: Clean Subdued Hover Indicator (Zero Motion Controls) */}
+              <div className="hidden md:flex items-center gap-2.5 pointer-events-none">
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
+                    isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
+                  }`}
+                />
+                <span>HOVER ↔ EXPLORE SCENE</span>
+              </div>
             </div>
 
             {/* Dynamic Status Cue during scroll stages: positioned above bottom button */}
