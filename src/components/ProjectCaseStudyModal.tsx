@@ -242,7 +242,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             </section>
 
             {/* 6. Sequential Project Navigation & Exit Bar */}
-            <nav className="w-full border-t border-white/10 pt-8 sm:pt-12 pb-16 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <nav className="w-full border-t border-white/10 pt-8 sm:pt-12 pb-24 sm:pb-32 flex flex-col sm:flex-row items-center justify-between gap-6">
               <button
                 onClick={() => onSelectProject(prevProject)}
                 className="group flex items-center gap-3 font-mono text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors cursor-pointer"
@@ -269,6 +269,24 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
               </button>
             </nav>
           </div>
+        </motion.div>
+
+        {/* Floating Return to Archive Button (Always visible on all pop up views) */}
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.95 }}
+          transition={{ delay: 0.15, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+        >
+          <button
+            onClick={onClose}
+            aria-label="Return to archive"
+            className="group flex items-center gap-3 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#0A0A0A]/90 hover:bg-[#F5F5F2] text-[#F5F5F2] hover:text-[#050505] border border-white/20 hover:border-white shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl font-mono text-[11px] sm:text-xs uppercase tracking-[0.22em] font-medium transition-all duration-300 cursor-pointer active:scale-95"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
+            <span>RETURN TO ARCHIVE</span>
+          </button>
         </motion.div>
       </motion.div>
     </AnimatePresence>
