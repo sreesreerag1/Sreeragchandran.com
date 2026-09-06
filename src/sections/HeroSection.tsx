@@ -11,7 +11,6 @@ const LIGHT_HERO_VIDEO_URL = '/videos/Hero_White.mp4?v=5';
 const LIGHT_INTRO_VIDEO_URL = '/videos/creature_White.mp4?v=3';
 
 const DARK_HERO_POSTER = '/videos/hero-poster.jpg';
-const DARK_CREATURE_POSTER = '/videos/creature-poster.jpg';
 
 const SERVICES = [
   '/ CREATIVE DIRECTION',
@@ -535,16 +534,19 @@ export const HeroSection: React.FC = () => {
       const duration = offscreenVideo.duration || 10;
       durationRefTarget.current = duration;
 
-      const vWidth = offscreenVideo.videoWidth || 1280;
-      const vHeight = offscreenVideo.videoHeight || 720;
-      const scale = Math.min(1, 640 / vWidth);
-      const targetWidth = Math.round(vWidth * scale);
-      const targetHeight = Math.round(vHeight * scale);
+      const vWidth = offscreenVideo.videoWidth || 1920;
+      const vHeight = offscreenVideo.videoHeight || 1080;
+      const targetWidth = vWidth;
+      const targetHeight = vHeight;
 
       const extractCanvas = document.createElement('canvas');
       extractCanvas.width = targetWidth;
       extractCanvas.height = targetHeight;
       const ctx = extractCanvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+      }
 
       const extracted: CanvasImageSource[] = [];
       for (let i = 0; i < targetFrames; i++) {
@@ -725,8 +727,10 @@ export const HeroSection: React.FC = () => {
           if (frame) {
             const ctx = introCanvasDarkRef.current.getContext('2d');
             if (ctx) {
-              const fWidth = (frame as any).width || 1280;
-              const fHeight = (frame as any).height || 720;
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              const fWidth = (frame as any).width || 1920;
+              const fHeight = (frame as any).height || 1080;
               const bounds = calculateDrawBounds(
                 introCanvasDarkRef.current.width,
                 introCanvasDarkRef.current.height,
@@ -761,8 +765,10 @@ export const HeroSection: React.FC = () => {
           if (frame) {
             const ctx = introCanvasLightRef.current.getContext('2d');
             if (ctx) {
-              const fWidth = (frame as any).width || 1280;
-              const fHeight = (frame as any).height || 720;
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              const fWidth = (frame as any).width || 1920;
+              const fHeight = (frame as any).height || 1080;
               const bounds = calculateDrawBounds(
                 introCanvasLightRef.current.width,
                 introCanvasLightRef.current.height,
@@ -811,6 +817,8 @@ export const HeroSection: React.FC = () => {
         if (frame) {
           const ctx = canvasDarkRef.current.getContext('2d');
           if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             const fWidth = (frame as any).width || 1920;
             const fHeight = (frame as any).height || 1080;
             const bounds = calculateDrawBounds(
@@ -844,6 +852,8 @@ export const HeroSection: React.FC = () => {
         if (frame) {
           const ctx = canvasLightRef.current.getContext('2d');
           if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             const fWidth = (frame as any).width || 1920;
             const fHeight = (frame as any).height || 1080;
             const bounds = calculateDrawBounds(
@@ -1070,7 +1080,6 @@ export const HeroSection: React.FC = () => {
                   <video
                     ref={introVideoDarkRef}
                     src={DARK_INTRO_VIDEO_URL}
-                    poster={DARK_CREATURE_POSTER}
                     muted
                     playsInline
                     preload="auto"
