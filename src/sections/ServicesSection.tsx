@@ -14,67 +14,67 @@ interface ServiceData {
 const SERVICES: ServiceData[] = [
   {
     number: '01',
-    title: '3D MODELING',
-    subtitle: 'High-precision spatial geometry, hard-surface assets & parametric forms',
+    title: 'BRAND IDENTITY',
+    subtitle: 'Creating distinctive visual identities that give brands a clear and memorable presence.',
     description:
-      'Architecting sculptural, photorealistic 3D assets and parametric environments. From bespoke industrial product prototypes to surrealist brand sculptures, each polygonal mesh is sculpted with mathematical precision and material authenticity.',
+      'From foundational visual systems to high-touch brand collateral, I build distinctive, coherent identities designed to give brands an enduring, commanding market presence across all cultural touchpoints.',
     deliverables: [
-      'Parametric & Organic Surface Modeling',
-      'Industrial Product Prototyping',
-      'Architectural & Spatial Environments',
-      'Optimized Real-Time WebGL Geometries',
+      'Comprehensive Visual Systems',
+      'Bespoke Typographic Design',
+      'Brand Architecture & Guidelines',
+      'Packaging & Physical Collateral',
     ],
   },
   {
     number: '02',
-    title: 'RENDERING',
-    subtitle: 'Photorealistic lighting simulation, subsurface scattering & cinematic frames',
+    title: 'EXPERIENTIAL CONCEPTS',
+    subtitle: 'Creating original concepts that transform spaces, events and interactions into memorable experiences.',
     description:
-      'Harnessing unbiased ray-tracing, spectral dispersion, and tangible surface physics. We craft museum-grade visual stills and hero compositions that elevate ordinary product forms into high-luxury cultural artifacts.',
+      'Conceiving spatial environments, live stages, interactive pavilions, and brand activations that dissolve the barrier between audience and space, turning physical gatherings into unforgettable communal memories.',
     deliverables: [
-      'Octane & Redshift Spectral Lighting',
-      'Custom Procedural Material Shaders',
-      'Key visual & Hero Editorial Stills',
-      'Print-Resolution Hyper-Detail Mastery',
+      'Spatial Experience Design',
+      'Immersive Stage & Set Direction',
+      'Interactive Environments & Installations',
+      'Large-Scale Event Activations',
     ],
   },
   {
     number: '03',
-    title: 'MOTION DESIGN',
-    subtitle: 'Temporal choreography, kinetic rhythm & fluid cinematic physics',
+    title: 'CAMPAIGN IDEATION',
+    subtitle: 'Turning insights into strong creative ideas that connect with audiences across multiple touchpoints.',
     description:
-      'Translating brand tension and architectural rhythm into hypnotic temporal arcs. We choreograph title sequences, product reveal films, and kinetic brand systems that command sustained fascination across digital screens.',
+      'Distilling strategic brand objectives into arresting conceptual hooks and 360-degree creative campaigns that capture cultural attention and spark conversations across digital, broadcast, and physical mediums.',
     deliverables: [
-      'Cinematic Reveal Trailers & Teasers',
-      'Kinetic Typographic Systems',
-      'Physics-Driven Particle & Fluid Sims',
-      'Micro-Interactions for Immersive Web',
+      '360° Creative Campaign Concepts',
+      'Transmedia Storytelling Arcs',
+      'Cultural Activation Frameworks',
+      'Cross-Platform Creative Strategy',
     ],
   },
   {
     number: '04',
-    title: 'BRANDING',
-    subtitle: 'Perception architecture, typographic tension & unified visual identity',
+    title: 'VISUAL NARRATIVE',
+    subtitle: 'Translating ideas into compelling visual stories, from the first frame to the final execution.',
     description:
-      'Engineering undeniable visual authority for visionary founders and global enterprises. We strip away decorative excess to forge typographic systems, monogram symbols, and design frameworks that anchor lasting market presence.',
+      'Directing cinematic visual worlds, key visuals, motion aesthetics, and storyboards that articulate complex emotional narratives with striking visual clarity and artistic rigor.',
     deliverables: [
-      'Comprehensive Brand Architecture',
-      'Custom Bespoke Typography Systems',
-      'Executive Brand Guidelines & Directives',
-      'Physical Collateral & Packaging Craft',
+      'Key Visuals & Hero Stills',
+      'Motion Aesthetics & Treatment',
+      'Film & Content Storyboards',
+      'Art Direction & World-Building',
     ],
   },
   {
     number: '05',
-    title: 'WEB DESIGN',
-    subtitle: 'Museum-grade digital flagships, spatial UI & interactive choreography',
+    title: 'CREATIVE DIRECTION',
+    subtitle: 'Leading the creative vision from concept to execution, ensuring every element works as one cohesive idea.',
     description:
-      'Rejecting generic templates in favor of tailor-made digital journeys. We engineer award-winning interactive flagships that fuse narrative pacing, GLSL canvas shaders, and effortless usability into unforgettable web experiences.',
+      'Guiding multidisciplinary teams, agencies, and production partners with uncompromising artistic standards, ensuring every detail from initial pitch to final delivery adheres to one cohesive, elevated vision.',
     deliverables: [
-      'Experiential Flagships & E-Commerce',
-      'Interactive 3D & GLSL Shaders',
-      'Mobile-Optimized Fluid Performance',
-      'Design Engineering & Creative Direction',
+      'End-to-End Creative Leadership',
+      'Vision & Pitch Direction',
+      'Multidisciplinary Team Orchestration',
+      'Executive Creative Quality Control',
     ],
   },
 ];
@@ -88,16 +88,19 @@ export const ServicesSection: React.FC = () => {
 
   return (
     <section
-      id="services"
+      id="what-i-do"
       className="relative z-30 w-full bg-[#050505] text-[#F5F5F2] pt-24 sm:pt-32 md:pt-40 pb-28 sm:pb-36 md:pb-48 px-5 sm:px-8 md:px-14 lg:px-16 border-t border-white/[0.15]"
     >
+      {/* Anchor for backward compatibility with #services */}
+      <span id="services" className="sr-only" />
+
       <div className="mx-auto max-w-7xl">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between pb-12 sm:pb-16 md:pb-20 border-b border-white/[0.15] gap-6">
           <div>
             <Reveal delay={100}>
               <h2 className="font-kanit font-semibold text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-[-0.03em] uppercase leading-[1.0] text-[#F5F5F2]">
-                CAPABILITIES
+                WHAT I DO
               </h2>
             </Reveal>
           </div>
@@ -105,10 +108,10 @@ export const ServicesSection: React.FC = () => {
           <Reveal delay={180}>
             <div className="flex flex-col md:text-right max-w-sm">
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#707070] font-semibold mb-1">
-                DISCIPLINED CRAFT
+                CREATIVE STRENGTHS
               </span>
               <p className="font-sans text-xs sm:text-sm text-[#A6A6A6] font-light leading-relaxed">
-                Strategic vision executed across five focused creative disciplines.
+                Strategic vision executed across five core creative strengths.
               </p>
             </div>
           </Reveal>

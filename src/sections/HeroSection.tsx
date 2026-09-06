@@ -14,8 +14,8 @@ const DARK_HERO_POSTER = '/videos/hero-poster.jpg';
 
 const SERVICES = [
   '/ CREATIVE DIRECTION',
-  '/ BRAND STRATEGY',
-  '/ VISUAL EXPERIENCE DESIGN',
+  '/ BRAND IDENTITY & CAMPAIGNS',
+  '/ EXPERIENTIAL & SPATIAL',
 ];
 
 // Cinematic smoothstep interpolation helper
@@ -1168,14 +1168,14 @@ export const HeroSection: React.FC = () => {
                           }`}
                         >
                           <span className="md:hidden">
-                            I DON'T JUST CREATE VISUALS.
+                            CREATIVE DIRECTOR
                             <br />
-                            I BUILD PERCEPTION.
+                            SHAPING IDEAS INTO EXPERIENCES.
                           </span>
                           <span className="hidden md:inline">
-                            I DON'T JUST CREATE VISUALS.
+                            CREATIVE DIRECTOR
                             <br />
-                            I BUILD PERCEPTION.
+                            SHAPING IDEAS INTO EXPERIENCES.
                           </span>
                         </h1>
                       </div>
@@ -1196,16 +1196,14 @@ export const HeroSection: React.FC = () => {
                           }`}
                         >
                           <span className="md:hidden">
-                            EVERY IDEA BEGINS WITH A STORY.
+                            IDEAS DESIGNED
                             <br />
-                            I TURN IT INTO VISUAL LANGUAGE.
+                            TO BE FELT.
                           </span>
                           <span className="hidden md:inline">
-                            EVERY IDEA BEGINS WITH A STORY.
+                            IDEAS DESIGNED
                             <br />
-                            I TURN IT INTO
-                            <br />
-                            VISUAL LANGUAGE.
+                            TO BE FELT.
                           </span>
                         </h2>
 
@@ -1220,9 +1218,7 @@ export const HeroSection: React.FC = () => {
                             transform: 'translateY(15px)',
                           }}
                         >
-                          Every idea begins with a story.
-                          <br />
-                          My role is to transform that story into meaningful identity, experience, and memory.
+                          I build ideas that move between brands, spaces, screens and culture — turning strategy into visual stories people remember.
                         </p>
                       </div>
                     </div>
@@ -1237,7 +1233,7 @@ export const HeroSection: React.FC = () => {
                       : 'border-[#3A3A3A]/20 text-[#555555]'
                   }`}
                 >
-                  <span>ART DIRECTION • BRAND STRATEGY • DIGITAL</span>
+                  <span>CREATIVE DIRECTION • BRAND IDENTITY • EXPERIENTIAL</span>
                   <span className={isDark ? 'text-[#707070]' : 'text-[#777777]'}>
                     DUBAI • 2026
                   </span>
@@ -1264,14 +1260,14 @@ export const HeroSection: React.FC = () => {
                           isDark ? 'text-[#F5F5F5]' : 'text-[#3A3A3A]'
                         }`}
                       >
-                        Strategic Clarity & Visceral Craft
+                        15 Years of Turning Ideas into Reality
                       </p>
                       <p
                         className={`text-xs sm:text-sm font-light leading-relaxed transition-colors duration-600 ${
                           isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
                         }`}
                       >
-                        Architecting perception, brand authority, and digital flagships for visionary enterprises.
+                        From brand identities and campaigns to large-scale live experiences, I’ve worked across disciplines where creativity needs to perform in the real world — not just look good on a presentation slide.
                       </p>
                     </div>
 
@@ -1287,16 +1283,17 @@ export const HeroSection: React.FC = () => {
                             isDark ? 'text-[#707070]' : 'text-[#777777]'
                           }`}
                         >
-                          COMBINE / DISCIPLINES
+                          CORE DISCIPLINES
                         </span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-1.5">
                         {[
-                          'Art Direction',
-                          'Brand Strategy',
-                          'Visual Storytelling',
-                          'Digital Experiences',
+                          'Brand Identity',
+                          'Experiential Concepts',
+                          'Campaign Ideation',
+                          'Visual Narrative',
+                          'Creative Direction',
                         ].map((discipline, idx) => (
                           <div
                             key={discipline}

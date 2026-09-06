@@ -4,7 +4,7 @@ import { Reveal } from './Reveal';
 const NAV_LINKS = [
   { label: 'WORK', href: '#works' },
   { label: 'ABOUT', href: '#philosophy' },
-  { label: 'PROCESS', href: '#services' },
+  { label: 'WHAT I DO', href: '#what-i-do' },
   { label: 'CONTACT', href: '#contact' },
 ];
 
@@ -40,7 +40,7 @@ export const Navbar: React.FC = () => {
           </a>
         </Reveal>
 
-        {/* Center Nav Links: Work, About, Process, Contact */}
+        {/* Center Nav Links: Work, About, What I Do, Contact */}
         <div className="hidden md:flex items-center gap-8 lg:gap-11">
           {NAV_LINKS.map((link, index) => (
             <Reveal key={link.label} delay={100 + index * 80}>
@@ -54,13 +54,14 @@ export const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Right CTA: Contact → */}
+        {/* Right CTA: Start a Conversation */}
         <Reveal delay={450}>
           <a
             href="#contact"
-            className="group inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-white/30 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-xs font-mono tracking-[0.14em] uppercase text-[#F5F5F2] transition-all duration-300 cursor-pointer shadow-sm"
+            className="group inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-white/30 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-3.5 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-xs font-mono tracking-[0.14em] uppercase text-[#F5F5F2] transition-all duration-300 cursor-pointer shadow-sm"
           >
-            <span>CONTACT →</span>
+            <span className="sm:hidden">CONTACT →</span>
+            <span className="hidden sm:inline">START A CONVERSATION →</span>
           </a>
         </Reveal>
       </nav>

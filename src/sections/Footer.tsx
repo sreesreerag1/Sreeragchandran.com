@@ -23,20 +23,25 @@ export const Footer: React.FC = () => {
               <h2 className="font-kanit font-semibold text-4xl sm:text-6xl md:text-7xl lg:text-[84px] uppercase tracking-[-0.03em] leading-[1.02] text-[#F5F5F2]">
                 LET'S CREATE
                 <br />
-                <span className="text-[#F5F5F2]/90">SOMETHING</span>
+                <span className="text-[#F5F5F2]/90">SOMETHING WORTH</span>
                 <br />
-                <span className="text-[#C8C1B5]">MEANINGFUL.</span>
+                <span className="text-[#C8C1B5]">REMEMBERING.</span>
               </h2>
+            </Reveal>
+            <Reveal delay={140}>
+              <p className="font-sans text-sm sm:text-base md:text-lg text-[#A6A6A6] font-light leading-relaxed max-w-xl mt-4 sm:mt-6">
+                Have a brand, campaign or experience in mind? Let’s turn the idea into something people can feel.
+              </p>
             </Reveal>
           </div>
 
           <Reveal delay={180}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <a
-                href="mailto:contact@sreeragchandran.com"
-                className="group inline-flex items-center gap-3 rounded-full border border-white/40 bg-transparent text-[#F5F5F2] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-9 py-4 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase transition-all duration-300 shadow-2xl cursor-pointer"
+                href="mailto:sreerag1@live.in"
+                className="group inline-flex items-center gap-3 rounded-full border border-white/40 bg-transparent text-[#F5F5F2] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-8 sm:px-9 py-4 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase transition-all duration-300 shadow-2xl cursor-pointer"
               >
-                <span>CONTACT →</span>
+                <span>START A CONVERSATION →</span>
                 <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:rotate-45" />
               </a>
             </div>
@@ -52,7 +57,7 @@ export const Footer: React.FC = () => {
             <p className="font-sans text-sm sm:text-base text-[#A6A6A6] font-light leading-relaxed">
               Based in Dubai.
               <br />
-              Directing select brand systems & digital flagships globally across EMEA, Americas, and APAC.
+              Directing select brand identities, campaigns, and experiential projects globally.
             </p>
           </div>
 
@@ -61,26 +66,26 @@ export const Footer: React.FC = () => {
               Direct Inquiries
             </span>
             <a
-              href="mailto:contact@sreeragchandran.com"
+              href="mailto:sreerag1@live.in"
               className="font-sans text-sm sm:text-base text-[#F5F5F2] hover:text-white font-light underline underline-offset-4 decoration-white/30 transition-colors"
             >
-              contact@sreeragchandran.com
+              sreerag1@live.in
             </a>
             <div className="mt-3 font-mono text-[11px] text-[#707070] uppercase tracking-widest">
-              Available for Q3/Q4 2026 Directing
+              Available for Directing &amp; Collaborations
             </div>
           </div>
 
           <div>
             <span className="font-mono text-xs uppercase tracking-[0.22em] text-[#707070] block mb-3.5 font-semibold">
-              Selected Capabilities
+              Core Disciplines
             </span>
             <ul className="font-sans text-sm text-[#A6A6A6] font-light space-y-1.5">
-              <li className="hover:text-white transition-colors cursor-default">01 3D Modeling & CGI</li>
-              <li className="hover:text-white transition-colors cursor-default">02 Spectral Rendering</li>
-              <li className="hover:text-white transition-colors cursor-default">03 Motion & Kinetic Design</li>
-              <li className="hover:text-white transition-colors cursor-default">04 Brand Architecture</li>
-              <li className="hover:text-white transition-colors cursor-default">05 Web Design & GLSL</li>
+              <li className="hover:text-white transition-colors cursor-default">01 Brand Identity</li>
+              <li className="hover:text-white transition-colors cursor-default">02 Experiential Concepts</li>
+              <li className="hover:text-white transition-colors cursor-default">03 Campaign Ideation</li>
+              <li className="hover:text-white transition-colors cursor-default">04 Visual Narrative</li>
+              <li className="hover:text-white transition-colors cursor-default">05 Creative Direction</li>
             </ul>
           </div>
 

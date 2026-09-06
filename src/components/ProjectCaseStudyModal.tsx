@@ -231,14 +231,48 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             )}
 
             {/* 5. Project Overview Text Section (At End of Gallery) */}
-            <section className="w-full bg-neutral-950/80 border border-white/10 rounded-2xl md:rounded-3xl p-6 sm:p-10 md:p-16 flex flex-col gap-5 sm:gap-6">
-              <h3 className="font-kanit font-semibold text-2xl sm:text-3xl md:text-5xl uppercase tracking-[-0.02em] text-white leading-tight">
-                {project.overviewHeading}
-              </h3>
+            <section className="w-full bg-neutral-950/80 border border-white/10 rounded-2xl md:rounded-3xl p-6 sm:p-10 md:p-16 flex flex-col gap-8 sm:gap-10">
+              <div className="flex flex-col gap-2">
+                <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#C8C1B5] font-semibold">
+                  CASE STUDY ARCHITECTURE
+                </span>
+                <h3 className="font-kanit font-semibold text-2xl sm:text-3xl md:text-5xl uppercase tracking-[-0.02em] text-white leading-tight">
+                  {project.overviewHeading}
+                </h3>
+              </div>
 
-              <p className="font-sans text-sm sm:text-base md:text-lg text-white/70 font-light leading-relaxed max-w-4xl tracking-wide">
-                {project.overviewDescription}
-              </p>
+              {project.challenge && project.idea && project.execution ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t border-white/10">
+                  <div className="flex flex-col gap-3">
+                    <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#C8C1B5] font-semibold flex items-center gap-2">
+                      <span className="text-white/30">01</span> / THE CHALLENGE
+                    </span>
+                    <p className="font-sans text-xs sm:text-sm text-white/75 font-light leading-relaxed">
+                      {project.challenge}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#C8C1B5] font-semibold flex items-center gap-2">
+                      <span className="text-white/30">02</span> / THE IDEA
+                    </span>
+                    <p className="font-sans text-xs sm:text-sm text-white/75 font-light leading-relaxed">
+                      {project.idea}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#C8C1B5] font-semibold flex items-center gap-2">
+                      <span className="text-white/30">03</span> / THE EXECUTION
+                    </span>
+                    <p className="font-sans text-xs sm:text-sm text-white/75 font-light leading-relaxed">
+                      {project.execution}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="font-sans text-sm sm:text-base md:text-lg text-white/70 font-light leading-relaxed max-w-4xl tracking-wide">
+                  {project.overviewDescription}
+                </p>
+              )}
             </section>
 
             {/* 6. Sequential Project Navigation & Exit Bar */}

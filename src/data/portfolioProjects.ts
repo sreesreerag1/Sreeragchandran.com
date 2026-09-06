@@ -20,6 +20,9 @@ export interface PortfolioProject {
   overviewDescription: string;
   creativeQuote: string;
   creativeDescription: string;
+  challenge?: string;
+  idea?: string;
+  execution?: string;
   images: ProjectImage[];
 }
 
@@ -37,6 +40,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A monumental launch experience designed for AI71, unveiling pioneering artificial intelligence systems through architectural lighting, physical vortex LED installations, and an otherworldly arrival sequence.",
     creativeQuote: "Designing spatial tension where physical geometry dissolves into pure digital luminescence.",
     creativeDescription: "From the monolithic triangular portal entrance to the central floating 3D vortex cube, every touchpoint was engineered to make complex algorithmic technology feel tactile, celestial, and undeniably transformative.",
+    challenge: "Introducing an advanced enterprise artificial intelligence venture with immediate global gravitas, moving beyond abstract code into a commanding, physically palpable presence.",
+    idea: "Conceptualize AI not as invisible data, but as architectural luminescence—an immersive journey through spatial gateways of machine intelligence.",
+    execution: "Designed a monolithic triangular arrival portal, floating central 3D vortex LED installation, and synchronized ambient lighting sequences that translated complex algorithmic systems into a visceral physical experience.",
     images: [
       {
             "id": "img-03",
@@ -113,6 +119,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "The Abu Dhabi Autonomous Racing League (A2RL) activation marries precision motorsport engineering with kinetic exhibition architecture at Yas Marina Circuit.",
     creativeQuote: "Translating 300 km/h autonomous telemetry into physical light conduits and spatial rhythm.",
     creativeDescription: "An illuminated tunnel structure envelops the driverless formula car, synchronizing architectural LED pulses to simulate aerodynamic velocity and cutting-edge machine cognition.",
+    challenge: "Conveying the sensation of 300 km/h autonomous racing telemetry to live spectators when there is no human driver behind the wheel.",
+    idea: "Materialize the invisible machine brain into dynamic light conduits that pulse with aerodynamic telemetry.",
+    execution: "Engineered a kinetic architectural light tunnel surrounding the driverless formula car at Yas Marina Circuit, synchronizing real-time telemetry pulses with structural illumination to dramatize raw machine cognition.",
     images: [
       {
             "id": "img-05",
@@ -169,6 +178,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A high-prestige plenary stage and ambient environment crafted for Abu Dhabi Islamic Bank's EFFICA gathering, establishing an atmosphere of institutional dignity and futuristic momentum.",
     creativeQuote: "Sculpting space with illumination to evoke quiet strength and visionary purpose.",
     creativeDescription: "Layered curved LED ribbons, cobalt ambient lighting, and bespoke seating geometries unite over a thousand delegates in a cohesive visual ecosystem.",
+    challenge: "Elevating an annual corporate banking plenary into an inspiring, high-prestige arena that reflects visionary economic ambition.",
+    idea: "Orchestrate space and light like an architectural symphony, balancing institutional dignity with futuristic momentum.",
+    execution: "Sculpted multi-tiered panoramic LED arcs, atmospheric cobalt gradient illumination, and bespoke delegate seating geometries that unified over 1,000 attendees in an immersive executive forum.",
     images: [
       {
             "id": "img-03",
@@ -205,6 +217,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A curated anthology of high-impact commercial exhibition stands, from bi-level automotive pavilions featuring vehicle turntables to cultural architectural showcases.",
     creativeQuote: "Architecture in miniature: commanding presence in the chaos of global expos.",
     creativeDescription: "Precision trusses, seamless illuminated LED banners, and bespoke hospitality mezzanine structures turn square footage into immersive brand flagships.",
+    challenge: "Capturing attention and establishing undeniable brand dominance within the visual noise and clutter of world trade expos.",
+    idea: "Treat exhibition stands as sovereign architectural pavilions rather than temporary vendor booths.",
+    execution: "Directed bi-level structural frameworks, illuminated tension banners, rotating vehicle platforms, and private hospitality mezzanines that commanded high footfall and elevated brand perception.",
     images: [
       {
             "id": "img-04",
@@ -286,6 +301,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A solo portrait exhibition examining identity, raw emotion, and psychological vulnerability through evocative lighting, textured contrast, and physical curation.",
     creativeQuote: "A portrait is not a record of appearance; it is a confession of the soul.",
     creativeDescription: "Printed on archival fine-art stock and mounted against natural burlap gallery walls, each portrait invites the viewer into an intimate dialogue with the human condition.",
+    challenge: "Stripping away superficial gloss to expose the raw emotional truth and psychological complexity of diverse human faces.",
+    idea: "Use intimate chiaroscuro lighting and textured, tactile gallery curation to create an unvarnished dialogue between viewer and subject.",
+    execution: "Directed fine-art portrait sessions with high-contrast tonal depth, printing on archival cotton rag and curating an earthy, burlap-walled spatial installation that demanded lingering contemplation.",
     images: [
       {
             "id": "img-01",
@@ -347,6 +365,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "The World Crisis & Emergency Management Summit (WCEMS 2025) convened international leaders against an architectural stage defined by monumental curves and holographic future-readiness installations.",
     creativeQuote: "Balancing gravitas and futuristic clarity for national emergency leadership.",
     creativeDescription: "A continuous 40-meter curved screen system with a floating suspended header ring, paired with tactile interactive AI installations, creating an unforgettable summit environment.",
+    challenge: "Designing a global emergency and crisis summit stage that balances solemn state gravitas with forward-looking technological preparedness.",
+    idea: "Anchor the stage with monumental curvature, symbolizing an unbroken horizon of national vigilance and protection.",
+    execution: "Directed a 40-meter curved panoramic LED wall suspended beneath an illuminated halo ring, seamlessly integrated with interactive AI touchpoints and broadcast-ready lighting.",
     images: [
       {
             "id": "img-09",
@@ -413,6 +434,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A complete visual rebrand and design system for EduLadder, an open-source educational platform engineered to make global learning accessible to all.",
     creativeQuote: "Reducing graphic communication to its purest functional geometry.",
     creativeDescription: "A strict typographic grid, bold international red accent palette, and bespoke ladder iconography synthesize education into a modern visual metaphor for upward mobility.",
+    challenge: "Creating a cohesive, accessible identity for an open-source educational platform competing in a saturated tech landscape.",
+    idea: "Ground the brand in the timeless functional clarity of Swiss international typography, symbolizing ascending intellectual growth.",
+    execution: "Developed a modular typographic identity system, high-contrast international red chromatic palette, and tactile physical collateral that turned an open-source movement into a trusted global platform.",
     images: [
       {
             "id": "img-02",
@@ -469,6 +493,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "The Roads & Transport Authority Dubai Annual Gathering honors internal excellence through an outdoor architectural sculpture composed of LED totem pillars and typographic monumentality.",
     creativeQuote: "Sculpting tribute into monumental pillars of light.",
     creativeDescription: "Ten staggered vertical LED monoliths display awardee tributes under the Dubai night sky, fronted by illuminated dimensional typography and framed by fiber-optic pathway arches.",
+    challenge: "Honoring public transit innovators in an open-air coastal setting without losing intimate human appreciation or theatrical impact.",
+    idea: "Transform the night shoreline into an outdoor sanctuary of light, where individual achievement stands tall as monumental pillars.",
+    execution: "Directed ten monolithic LED totems displaying honoree narratives under the stars, framed by sculptural illuminated arches and custom dimensional stage typography along the Dubai water.",
     images: [
       {
             "id": "img-04",
@@ -530,6 +557,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "The Technology Innovation Institute Global AI Summit in Abu Dhabi gathered global artificial intelligence luminaries in an architecturally synchronized plenary environment.",
     creativeQuote: "Crafting deep atmospheric focus in a room of boundless intellectual ambition.",
     creativeDescription: "Dramatic overhead architectural beams of light pierce deep blue atmospheric haze, focusing visual energy toward monumental wide-format LED presentation matrices.",
+    challenge: "Staging a world-class scientific plenary where international AI researchers and tech visionaries could debate the future of computation.",
+    idea: "Submerge the space in deep atmospheric focus, directing intellectual intensity entirely toward the ideas on stage.",
+    execution: "Choreographed precise overhead architectural light beams piercing deep cobalt haze, framing ultra-wide continuous LED presentation surfaces for distraction-free keynote delivery.",
     images: [
       {
             "id": "img-04",
@@ -571,6 +601,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A celebration of UAE heritage for Abu Dhabi Islamic Bank, translating historic architectural motifs, traditional souk craft, and desert textures into modern experiential pavilions.",
     creativeQuote: "Honoring ancestral memory through modern spatial proportions and tactile authenticity.",
     creativeDescription: "From hand-woven palm textures and ceiling fabric drapes to nostalgic Dukan storefront installations, every detail connects the bank's community with Emirati roots.",
+    challenge: "Celebrating national heritage within a contemporary corporate campus without relying on cliché or superficial folklore.",
+    idea: "Bridge generational memory by reinterpreting Emirati craft traditions through refined modern spatial proportions.",
+    execution: "Designed authentic experiential pavilions featuring hand-woven palm textures, fabric-canopy shade structures, artisanal dukan storefronts, and ambient amber lighting that fostered deep cultural pride.",
     images: [
       {
             "id": "img-01",
@@ -607,6 +640,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "An interactive, gamified crisis preparedness experience designed to train youth in emergency response through simulation sets, color-coded zones, and kinetic spatial discovery.",
     creativeQuote: "Transforming safety education into an exhilarating experiential landscape.",
     creativeDescription: "Vivid floating lighting constellations, interactive disaster simulation rooms, and dynamic spatial zoning engage young minds in life-saving readiness protocols.",
+    challenge: "Engaging youth and young professionals in crisis and emergency preparedness without inciting fear or disinterest.",
+    idea: "Transform safety protocols into an exhilarating, gamified journey of exploration and tactile agency.",
+    execution: "Directed dynamic multi-zoned spatial environments featuring color-coded simulation hubs, floating neon constellations, and interactive crisis-response scenario stations that made readiness feel heroic.",
     images: [
       {
             "id": "img-06",
@@ -678,6 +714,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "The Sharjah Entrepreneurship Festival 2022 masterplan reimagined festival grounds as an organic, biophilic haven bringing founders, creatives, and investors into authentic communion.",
     creativeQuote: "Where natural elements and modern creative geometry create communal intimacy.",
     creativeDescription: "Lush botanical flora, woven timber birdcage luminaires, open-air amphitheatres, and sustainable glasshouse hackathon spaces defined the human-centric festival campus.",
+    challenge: "Masterplanning a massive multi-acre entrepreneurial festival to feel intimate, vibrant, and effortlessly walkable.",
+    idea: "Conceptualize the festival grounds as a living biophilic oasis that dismantles barriers between founders, creators, and investors.",
+    execution: "Directed the festival masterplan with organic timber shade pergolas, woven lantern canopies, open-air amphitheaters, and lush botanical pathways that turned a massive campus into a warm creative community.",
     images: [
       {
             "id": "img-11",
@@ -764,6 +803,9 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     overviewDescription: "A high-impact fitness and yoga editorial campaign capturing human kinetic power through sculptural dual-color lighting and minimal studio framing.",
     creativeQuote: "Sculpting human muscularity and balance with precise chromatic temperature.",
     creativeDescription: "Golden-hour amber warm glows contrast with cool twilight cyan gradients, transforming athletic movement into statuesque modern fine-art tableaux.",
+    challenge: "Creating a fitness and wellness campaign that breaks out of athletic stereotypes and reads as fine-art editorial.",
+    idea: "Sculpt human muscularity and yogic equilibrium through the clash of warm ember light and cool cyan twilight.",
+    execution: "Directed studio shoots using dual-temperature chromatic lighting setups, framing fluid athletic movements into statuesque, editorial compositions that resonated across print and digital media.",
     images: [
       {
             "id": "img-02",

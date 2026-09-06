@@ -453,26 +453,29 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
           {/* Role */}
           <p className="font-sans text-[10px] sm:text-xs md:text-[14px] uppercase tracking-[0.2em] text-white/65 font-medium mt-1 sm:mt-1.5">
-            Creative Director &amp; Visual Artist
+            Creative Director
           </p>
 
           {/* Main Statement (Slow cinematic reveal) */}
-          <div className="mt-2.5 sm:mt-4 lg:mt-8">
-            <h2 className="font-kanit font-medium text-lg sm:text-xl md:text-[30px] lg:text-[34px] xl:text-[40px] leading-[1.18] sm:leading-[1.15] lg:leading-[1.12] tracking-[-0.02em] text-white">
-              15+ years shaping brands,
-              <br className="hidden sm:block" />
-              stories, and visual experiences.
+          <div className="mt-2.5 sm:mt-4 lg:mt-6">
+            <h2 className="font-kanit font-medium text-lg sm:text-xl md:text-[28px] lg:text-[32px] xl:text-[38px] leading-[1.18] sm:leading-[1.15] lg:leading-[1.12] tracking-[-0.02em] text-white uppercase">
+              “I create ideas that don’t stay on the page.”
             </h2>
           </div>
 
           {/* Supporting Paragraph 1 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[14px] xl:text-[15px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-2 sm:mt-3 lg:mt-5 max-w-xl">
-            Sreerag Chandran is a multidisciplinary creative director with a strong foundation in painting and drawing. His work brings together artistic intuition, strategic thinking, and a sharp eye for visual storytelling.
+          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-2 sm:mt-3 lg:mt-4 max-w-xl">
+            I’m Sreerag Chandran, a multidisciplinary Creative Director with 15 years of experience across advertising, branding, live experiences and visual storytelling.
           </p>
 
           {/* Supporting Paragraph 2 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[14px] xl:text-[15px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-3 max-w-xl">
-            From concept to final delivery, he leads each project with a hands-on approach — crafting distinctive identities, high-concept visuals, and memorable brand experiences with precision and originality.
+          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
+            I believe the strongest ideas don’t belong to a single medium. They can live on a billboard, transform a space, become an immersive experience or exist on a screen.
+          </p>
+
+          {/* Supporting Paragraph 3 */}
+          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
+            My work sits at the intersection of strategy, storytelling and design — creating ideas that are not only visually distinctive, but built to connect with people.
           </p>
         </div>
 
@@ -490,13 +493,15 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         style={{ opacity: 0 }}
       >
         <div className="flex flex-wrap items-center gap-y-1 font-mono text-[9px] sm:text-xs uppercase tracking-[0.14em] sm:tracking-[0.16em] text-white/70 font-medium">
-          <span className="hover:text-white transition-colors cursor-default">Art Direction</span>
-          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
           <span className="hover:text-white transition-colors cursor-default">Brand Identity</span>
           <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
-          <span className="hover:text-white transition-colors cursor-default">Visual Storytelling</span>
+          <span className="hover:text-white transition-colors cursor-default">Experiential Concepts</span>
           <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
-          <span className="hover:text-white transition-colors cursor-default">Creative Strategy</span>
+          <span className="hover:text-white transition-colors cursor-default">Campaign Ideation</span>
+          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
+          <span className="hover:text-white transition-colors cursor-default">Visual Narrative</span>
+          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
+          <span className="hover:text-white transition-colors cursor-default">Creative Direction</span>
         </div>
       </div>
     </section>

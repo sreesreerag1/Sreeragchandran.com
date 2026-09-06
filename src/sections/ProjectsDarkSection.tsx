@@ -260,7 +260,7 @@ export const ProjectsDarkSection: React.FC = () => {
           <div>
             <Reveal delay={100}>
               <h2 className="font-kanit font-semibold text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-[-0.03em] uppercase leading-[1.0] text-[#F5F5F2]">
-                PROJECTS
+                SELECTED WORK
               </h2>
             </Reveal>
           </div>
@@ -268,10 +268,10 @@ export const ProjectsDarkSection: React.FC = () => {
           <Reveal delay={180}>
             <div className="flex flex-col md:text-right max-w-sm">
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#707070] font-semibold mb-1">
-                STICKY STACKING ARCHIVE
+                CURATED CASE STUDIES
               </span>
               <p className="font-sans text-xs sm:text-sm text-[#A6A6A6] font-light leading-relaxed">
-                Curated portfolio cases engineered with spatial precision.
+                A collection of ideas, campaigns and experiences created across brands, spaces and platforms.
               </p>
             </div>
           </Reveal>

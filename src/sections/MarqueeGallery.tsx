@@ -87,15 +87,20 @@ export const MarqueeGallery: React.FC = () => {
           <div>
             <Reveal delay={100}>
               <h2 className="font-kanit font-semibold text-3xl sm:text-5xl md:text-6xl tracking-[-0.03em] uppercase leading-[1.05] text-[#F5F5F2]">
-                SELECTED ARCHIVE
+                WORK
               </h2>
             </Reveal>
           </div>
 
           <Reveal delay={180}>
-            <p className="font-mono text-xs sm:text-[13px] text-[#A6A6A6] uppercase tracking-[0.16em] max-w-xs md:text-right">
-              SCROLL-REACTIVE HORIZONTAL MOVEMENT • 2024–2026
-            </p>
+            <div className="flex flex-col md:text-right max-w-xs">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#707070] font-semibold mb-1">
+                PORTFOLIO ARCHIVE
+              </span>
+              <p className="font-sans text-xs sm:text-sm text-[#A6A6A6] font-light leading-relaxed">
+                Ideas brought to life.
+              </p>
+            </div>
           </Reveal>
         </div>
       </div>
