@@ -70,8 +70,8 @@ export const HeroSection: React.FC = () => {
   const canvasLightRef = useRef<HTMLCanvasElement>(null);
   const videoDarkRef = useRef<HTMLVideoElement>(null);
   const videoLightRef = useRef<HTMLVideoElement>(null);
-  const darkFramesRef = useRef<ImageBitmap[]>([]);
-  const lightFramesRef = useRef<ImageBitmap[]>([]);
+  const darkFramesRef = useRef<CanvasImageSource[]>([]);
+  const lightFramesRef = useRef<CanvasImageSource[]>([]);
   const [isDarkFramesReady, setIsDarkFramesReady] = useState(false);
   const [isLightFramesReady, setIsLightFramesReady] = useState(false);
 
@@ -81,8 +81,8 @@ export const HeroSection: React.FC = () => {
   const introVideoLightRef = useRef<HTMLVideoElement>(null);
   const introCanvasDarkRef = useRef<HTMLCanvasElement>(null);
   const introCanvasLightRef = useRef<HTMLCanvasElement>(null);
-  const darkIntroFramesRef = useRef<ImageBitmap[]>([]);
-  const lightIntroFramesRef = useRef<ImageBitmap[]>([]);
+  const darkIntroFramesRef = useRef<CanvasImageSource[]>([]);
+  const lightIntroFramesRef = useRef<CanvasImageSource[]>([]);
   const [isDarkIntroFramesReady, setIsDarkIntroFramesReady] = useState(false);
   const [isLightIntroFramesReady, setIsLightIntroFramesReady] = useState(false);
 
@@ -101,7 +101,11 @@ export const HeroSection: React.FC = () => {
   const [isMotionPermNeeded, setIsMotionPermNeeded] = useState(false);
   const [isMotionActive, setIsMotionActive] = useState(false);
   const isMotionActiveRef = useRef(false);
-  const smoothedRollRef = useRef(0);
+  const smoothedRollRef = useRef<number | null>(null);
+  const lastDarkSeekTimeRef = useRef(0);
+  const lastLightSeekTimeRef = useRef(0);
+  const isDarkSeekingRef = useRef(false);
+  const isLightSeekingRef = useRef(false);
 
   useEffect(() => {
     if (
@@ -343,8 +347,14 @@ export const HeroSection: React.FC = () => {
     const rollRad = Math.atan2(Math.sin(gRad), Math.cos(gRad) * sinB);
     const rollDeg = (rollRad * 180) / Math.PI;
 
-    // Low-pass filter on raw sensor roll angle to eliminate hand tremors & sensor noise
-    smoothedRollRef.current += (rollDeg - smoothedRollRef.current) * 0.3;
+    // Initialize smoothing on first event to eliminate ramp-up lag
+    if (smoothedRollRef.current === null) {
+      smoothedRollRef.current = rollDeg;
+    } else {
+      // Exponential low-pass filter (0.22) eliminates hand tremors & sensor noise
+      // while keeping creature head tracking fluid and responsive
+      smoothedRollRef.current += (rollDeg - smoothedRollRef.current) * 0.22;
+    }
 
     // Natural ergonomic tilt range: ±22° wrist tilt
     const maxRoll = 22.0;
@@ -360,6 +370,17 @@ export const HeroSection: React.FC = () => {
 
   // Request motion permission on iOS 13+ on user interaction
   const requestMotionPermission = useCallback(async () => {
+    // Prime the video decoder synchronously inside user-gesture context
+    if (introVideoDarkRef.current) {
+      introVideoDarkRef.current.muted = true;
+      const p = introVideoDarkRef.current.play();
+      if (p !== undefined) {
+        p.then(() => {
+          introVideoDarkRef.current?.pause();
+        }).catch(() => {});
+      }
+    }
+
     if (
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof (DeviceOrientationEvent as any).requestPermission === 'function'
@@ -374,6 +395,7 @@ export const HeroSection: React.FC = () => {
         }
       } catch (err) {
         console.warn('Motion permission request error:', err);
+        setIsMotionPermNeeded(false);
       }
     } else {
       setIsMotionPermNeeded(false);
@@ -471,11 +493,11 @@ export const HeroSection: React.FC = () => {
     };
   }, [isDark]);
 
-  // Reusable frame extractor with iOS WebKit hardware acceleration & progressive caching
+  // Reusable frame extractor with progressive caching & fallback
   const extractFrames = async (
     videoUrl: string,
     targetFrames: number,
-    targetRef: React.MutableRefObject<ImageBitmap[]>,
+    targetRef: React.MutableRefObject<CanvasImageSource[]>,
     durationRefTarget: React.MutableRefObject<number>,
     setReady: (val: boolean) => void,
     isMounted: () => boolean
@@ -485,6 +507,9 @@ export const HeroSection: React.FC = () => {
       const offscreenVideo = document.createElement('video');
       offscreenVideo.muted = true;
       offscreenVideo.playsInline = true;
+      offscreenVideo.setAttribute('playsinline', '');
+      offscreenVideo.setAttribute('webkit-playsinline', '');
+      offscreenVideo.setAttribute('muted', '');
       offscreenVideo.preload = 'auto';
       offscreenVideo.src = videoUrl;
 
@@ -496,11 +521,15 @@ export const HeroSection: React.FC = () => {
       offscreenVideo.style.width = '1px';
       offscreenVideo.style.height = '1px';
       document.body.appendChild(offscreenVideo);
+      offscreenVideo.load();
 
-      await new Promise<void>((resolve, reject) => {
-        offscreenVideo.onloadedmetadata = () => resolve();
-        offscreenVideo.onerror = (e) => reject(e);
-        setTimeout(() => resolve(), 3000);
+      await new Promise<void>((resolve) => {
+        const onMeta = () => {
+          offscreenVideo.removeEventListener('loadedmetadata', onMeta);
+          resolve();
+        };
+        offscreenVideo.addEventListener('loadedmetadata', onMeta);
+        setTimeout(resolve, 2000);
       });
 
       const duration = offscreenVideo.duration || 10;
@@ -517,41 +546,51 @@ export const HeroSection: React.FC = () => {
       extractCanvas.height = targetHeight;
       const ctx = extractCanvas.getContext('2d');
 
-      const extracted: ImageBitmap[] = [];
+      const extracted: CanvasImageSource[] = [];
       for (let i = 0; i < targetFrames; i++) {
         if (!isMounted()) break;
         const targetTime = (i / (targetFrames - 1)) * Math.max(0, duration - 0.05);
         await new Promise<void>((resolve) => {
-          let resolved = false;
+          let done = false;
           const finish = () => {
-            if (resolved) return;
-            resolved = true;
+            if (done) return;
+            done = true;
             offscreenVideo.removeEventListener('seeked', finish);
-            clearTimeout(timeoutId);
+            clearTimeout(tid);
             resolve();
           };
-          const timeoutId = setTimeout(finish, 85);
+          const tid = setTimeout(finish, 140);
           offscreenVideo.addEventListener('seeked', finish);
-          if (typeof (offscreenVideo as any).fastSeek === 'function') {
-            (offscreenVideo as any).fastSeek(targetTime);
-          } else {
-            offscreenVideo.currentTime = targetTime;
-          }
+          offscreenVideo.currentTime = targetTime;
         });
 
         if (ctx) {
-          ctx.drawImage(offscreenVideo, 0, 0, targetWidth, targetHeight);
-          if ('createImageBitmap' in window) {
-            try {
-              const bmp = await createImageBitmap(extractCanvas);
-              extracted.push(bmp);
-              // Progressive availability: begin rendering as soon as first batch is ready
-              if (extracted.length >= 6 && extracted.length % 4 === 0) {
-                targetRef.current = [...extracted];
-                setReady(true);
+          try {
+            ctx.drawImage(offscreenVideo, 0, 0, targetWidth, targetHeight);
+            if ('createImageBitmap' in window) {
+              try {
+                const bmp = await createImageBitmap(extractCanvas);
+                extracted.push(bmp);
+              } catch {
+                const c = document.createElement('canvas');
+                c.width = targetWidth;
+                c.height = targetHeight;
+                c.getContext('2d')?.drawImage(extractCanvas, 0, 0);
+                extracted.push(c);
               }
-            } catch {}
-          }
+            } else {
+              const c = document.createElement('canvas');
+              c.width = targetWidth;
+              c.height = targetHeight;
+              c.getContext('2d')?.drawImage(extractCanvas, 0, 0);
+              extracted.push(c);
+            }
+            // Progressive availability: begin rendering as soon as first batch is ready
+            if (extracted.length >= 6 && extracted.length % 4 === 0) {
+              targetRef.current = [...extracted];
+              setReady(true);
+            }
+          } catch {}
         }
       }
 
@@ -569,7 +608,7 @@ export const HeroSection: React.FC = () => {
     }
   };
 
-  // Preload and cache frames for both Dark and Light video moods (Desktop only)
+  // Preload and cache frames for both Dark and Light video moods
   useEffect(() => {
     let isMounted = true;
     const checkMounted = () => isMounted;
@@ -582,7 +621,9 @@ export const HeroSection: React.FC = () => {
       extractFrames(DARK_INTRO_VIDEO_URL, 24, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
       return () => {
         isMounted = false;
-        darkIntroFramesRef.current.forEach((bmp) => bmp.close());
+        darkIntroFramesRef.current.forEach((bmp) => {
+          if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
+        });
       };
     }
 
@@ -600,10 +641,18 @@ export const HeroSection: React.FC = () => {
     return () => {
       isMounted = false;
       clearTimeout(timer);
-      darkIntroFramesRef.current.forEach((bmp) => bmp.close());
-      lightIntroFramesRef.current.forEach((bmp) => bmp.close());
-      darkFramesRef.current.forEach((bmp) => bmp.close());
-      lightFramesRef.current.forEach((bmp) => bmp.close());
+      darkIntroFramesRef.current.forEach((bmp) => {
+        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
+      });
+      lightIntroFramesRef.current.forEach((bmp) => {
+        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
+      });
+      darkFramesRef.current.forEach((bmp) => {
+        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
+      });
+      lightFramesRef.current.forEach((bmp) => {
+        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
+      });
     };
   }, []);
 
@@ -676,26 +725,27 @@ export const HeroSection: React.FC = () => {
           if (frame) {
             const ctx = introCanvasDarkRef.current.getContext('2d');
             if (ctx) {
+              const fWidth = (frame as any).width || 1280;
+              const fHeight = (frame as any).height || 720;
               const bounds = calculateDrawBounds(
                 introCanvasDarkRef.current.width,
                 introCanvasDarkRef.current.height,
-                frame.width,
-                frame.height
+                fWidth,
+                fHeight
               );
               ctx.clearRect(0, 0, introCanvasDarkRef.current.width, introCanvasDarkRef.current.height);
-              ctx.drawImage(frame, 0, 0, frame.width, frame.height, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
             }
           }
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
           const v = introVideoDarkRef.current;
-          if (!v.seeking && v.readyState >= 2) {
+          const isBusy = (v.seeking || isDarkSeekingRef.current) && (now - lastDarkSeekTimeRef.current < 120);
+          if (!isBusy && v.readyState >= 2) {
             const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
-            if (Math.abs(v.currentTime - targetTime) > 0.04) {
-              if (typeof (v as any).fastSeek === 'function') {
-                (v as any).fastSeek(targetTime);
-              } else {
-                v.currentTime = targetTime;
-              }
+            if (Math.abs(v.currentTime - targetTime) > 0.02) {
+              isDarkSeekingRef.current = true;
+              lastDarkSeekTimeRef.current = now;
+              v.currentTime = targetTime;
             }
           }
         }
@@ -711,26 +761,27 @@ export const HeroSection: React.FC = () => {
           if (frame) {
             const ctx = introCanvasLightRef.current.getContext('2d');
             if (ctx) {
+              const fWidth = (frame as any).width || 1280;
+              const fHeight = (frame as any).height || 720;
               const bounds = calculateDrawBounds(
                 introCanvasLightRef.current.width,
                 introCanvasLightRef.current.height,
-                frame.width,
-                frame.height
+                fWidth,
+                fHeight
               );
               ctx.clearRect(0, 0, introCanvasLightRef.current.width, introCanvasLightRef.current.height);
-              ctx.drawImage(frame, 0, 0, frame.width, frame.height, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
             }
           }
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
           const v = introVideoLightRef.current;
-          if (!v.seeking && v.readyState >= 2) {
+          const isBusy = (v.seeking || isLightSeekingRef.current) && (now - lastLightSeekTimeRef.current < 120);
+          if (!isBusy && v.readyState >= 2) {
             const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
-            if (Math.abs(v.currentTime - targetTime) > 0.04) {
-              if (typeof (v as any).fastSeek === 'function') {
-                (v as any).fastSeek(targetTime);
-              } else {
-                v.currentTime = targetTime;
-              }
+            if (Math.abs(v.currentTime - targetTime) > 0.02) {
+              isLightSeekingRef.current = true;
+              lastLightSeekTimeRef.current = now;
+              v.currentTime = targetTime;
             }
           }
         }
@@ -760,14 +811,16 @@ export const HeroSection: React.FC = () => {
         if (frame) {
           const ctx = canvasDarkRef.current.getContext('2d');
           if (ctx) {
+            const fWidth = (frame as any).width || 1920;
+            const fHeight = (frame as any).height || 1080;
             const bounds = calculateDrawBounds(
               canvasDarkRef.current.width,
               canvasDarkRef.current.height,
-              frame.width,
-              frame.height
+              fWidth,
+              fHeight
             );
             ctx.clearRect(0, 0, canvasDarkRef.current.width, canvasDarkRef.current.height);
-            ctx.drawImage(frame, 0, 0, frame.width, frame.height, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+            ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
           }
         }
       } else if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
@@ -791,14 +844,16 @@ export const HeroSection: React.FC = () => {
         if (frame) {
           const ctx = canvasLightRef.current.getContext('2d');
           if (ctx) {
+            const fWidth = (frame as any).width || 1920;
+            const fHeight = (frame as any).height || 1080;
             const bounds = calculateDrawBounds(
               canvasLightRef.current.width,
               canvasLightRef.current.height,
-              frame.width,
-              frame.height
+              fWidth,
+              fHeight
             );
             ctx.clearRect(0, 0, canvasLightRef.current.width, canvasLightRef.current.height);
-            ctx.drawImage(frame, 0, 0, frame.width, frame.height, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+            ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
           }
         }
       } else if (videoLightRef.current && lightHeroDurationRef.current > 0) {
@@ -1022,6 +1077,9 @@ export const HeroSection: React.FC = () => {
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
                     }}
+                    onSeeked={() => {
+                      isDarkSeekingRef.current = false;
+                    }}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-300 ${
                       isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
@@ -1047,6 +1105,9 @@ export const HeroSection: React.FC = () => {
                     preload={isDark ? 'none' : 'auto'}
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) lightIntroDurationRef.current = e.currentTarget.duration;
+                    }}
+                    onSeeked={() => {
+                      isLightSeekingRef.current = false;
                     }}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none transition-opacity duration-300 ${
                       isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
