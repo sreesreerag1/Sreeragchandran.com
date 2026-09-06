@@ -93,8 +93,8 @@ export const HeroSection: React.FC = () => {
   const handoffStartTimeRef = useRef(0);
   const isTransitionCompleteRef = useRef(false);
 
-  const introTargetProgressRef = useRef(0.2);
-  const introSmoothedProgressRef = useRef(0.2);
+  const introTargetProgressRef = useRef(0.5);
+  const introSmoothedProgressRef = useRef(0.5);
   const [isAtTop, setIsAtTop] = useState(true);
 
   // Direct DOM ref for buttery-smooth hardware-accelerated downward push transition (zero React re-renders)
@@ -318,25 +318,105 @@ export const HeroSection: React.FC = () => {
       }
     };
 
-    // Mobile Device Orientation Motion Controller (Gyroscope Tilt)
-    // Tilting phone left turns creature head left; tilting right turns head right
-    const handleOrientation = (e: DeviceOrientationEvent) => {
+    // =========================================================================
+    // Mobile Motion Controller (STRICTLY Left-to-Right Axis Only)
+    // - Uses lateral accelerometer as primary: 100% physically orthogonal to
+    //   pitch (tilting up/down has EXACT ZERO effect on creature movement).
+    // - DeviceOrientation fallback has Euler flip protection & beta singularity filter.
+    // - Desktop mouse hover remains completely untouched.
+    // =========================================================================
+    let hasMotionData = false;
+
+    // 1. Primary: DeviceMotionEvent (pure lateral accelerometer)
+    const handleMotion = (e: DeviceMotionEvent) => {
       if (!isMobileDevice()) return;
       if (introPhaseRef.current !== 'EXPLORE') return;
-      if (e.gamma !== null && typeof e.gamma === 'number') {
-        // gamma: left-to-right tilt in degrees (-90 to +90)
-        // Neutral holding upright: gamma ≈ 0
-        // Tilting left: negative (clamped to -25°)
-        // Tilting right: positive (clamped to +25°)
-        const clampedGamma = Math.max(-25, Math.min(25, e.gamma));
-        // Map: tilt left -> 1.0 (creature looks left), tilt right -> 0.0 (creature looks right)
-        const tiltNorm = 1 - (clampedGamma + 25) / 50;
-        introTargetProgressRef.current = tiltNorm;
+      const acc = e.accelerationIncludingGravity;
+      if (!acc || acc.x === null || typeof acc.x === 'undefined') return;
+
+      hasMotionData = true;
+
+      // Handle orientation (portrait vs landscape)
+      let lateralAcc = acc.x;
+      if (typeof window !== 'undefined' && typeof window.orientation !== 'undefined') {
+        if (window.orientation === 90) {
+          lateralAcc = acc.y ?? acc.x;
+        } else if (window.orientation === -90 || window.orientation === 270) {
+          lateralAcc = -(acc.y ?? acc.x);
+        }
       }
+
+      // Max lateral tilt threshold: ~22 degrees tilt reaches full rotation (-3.5 to +3.5 m/s²)
+      const maxTilt = 3.5;
+      const clampedX = Math.max(-maxTilt, Math.min(maxTilt, lateralAcc));
+
+      // Small deadzone (±0.25 m/s²) to eliminate micro hand tremors when holding still
+      let normalizedX = clampedX;
+      if (Math.abs(normalizedX) < 0.25) {
+        normalizedX = 0;
+      } else {
+        normalizedX =
+          normalizedX > 0
+            ? ((normalizedX - 0.25) / (maxTilt - 0.25)) * maxTilt
+            : ((normalizedX + 0.25) / (maxTilt - 0.25)) * maxTilt;
+      }
+
+      // Map strictly left-to-right:
+      // Tilt left (negative lateral acceleration) -> 1.0 (creature looks left)
+      // Neutral upright (0 lateral acceleration)   -> 0.5 (creature looks center)
+      // Tilt right (positive lateral acceleration)-> 0.0 (creature looks right)
+      const tiltNorm = 0.5 - normalizedX / (maxTilt * 2);
+      introTargetProgressRef.current = Math.max(0, Math.min(1, tiltNorm));
+    };
+
+    // 2. Secondary Fallback: DeviceOrientationEvent (filtered strictly to horizontal tilt)
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (!isMobileDevice()) return;
+      if (hasMotionData) return; // Accelerometer is active and superior
+      if (introPhaseRef.current !== 'EXPLORE') return;
+      if (e.gamma === null || typeof e.gamma !== 'number') return;
+
+      // Filter out upright vertical singularity zone (|beta| near 90°)
+      if (e.beta !== null && typeof e.beta === 'number') {
+        if (Math.abs(Math.abs(e.beta) - 90) < 6) return;
+      }
+
+      let gamma = e.gamma;
+      // Correct 180-degree Euler inversion when device is tilted slightly forward
+      if (gamma > 90) gamma = 180 - gamma;
+      else if (gamma < -90) gamma = -180 - gamma;
+
+      // Limit motion strictly to left-to-right (-25° to +25°)
+      const maxAngle = 25;
+      const clampedGamma = Math.max(-maxAngle, Math.min(maxAngle, gamma));
+
+      let normGamma = clampedGamma;
+      if (Math.abs(normGamma) < 1.5) {
+        normGamma = 0;
+      } else {
+        normGamma =
+          normGamma > 0
+            ? ((normGamma - 1.5) / (maxAngle - 1.5)) * maxAngle
+            : ((normGamma + 1.5) / (maxAngle - 1.5)) * maxAngle;
+      }
+
+      const tiltNorm = 0.5 - normGamma / (maxAngle * 2);
+      introTargetProgressRef.current = Math.max(0, Math.min(1, tiltNorm));
     };
 
     // Request motion permission on iOS 13+ on user interaction
     const requestMotionPermission = async () => {
+      if (
+        typeof DeviceMotionEvent !== 'undefined' &&
+        typeof (DeviceMotionEvent as any).requestPermission === 'function'
+      ) {
+        try {
+          const perm = await (DeviceMotionEvent as any).requestPermission();
+          if (perm === 'granted') {
+            window.addEventListener('devicemotion', handleMotion, { passive: true });
+          }
+        } catch {}
+      }
       if (
         typeof DeviceOrientationEvent !== 'undefined' &&
         typeof (DeviceOrientationEvent as any).requestPermission === 'function'
@@ -353,14 +433,20 @@ export const HeroSection: React.FC = () => {
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('wheel', handleWheel, { passive: true });
 
-    // Attach orientation listener
+    // Attach listeners
+    if (
+      typeof DeviceMotionEvent === 'undefined' ||
+      typeof (DeviceMotionEvent as any).requestPermission !== 'function'
+    ) {
+      window.addEventListener('devicemotion', handleMotion, { passive: true });
+    }
     if (
       typeof DeviceOrientationEvent === 'undefined' ||
       typeof (DeviceOrientationEvent as any).requestPermission !== 'function'
     ) {
-      // Android and standard browsers: listen directly
       window.addEventListener('deviceorientation', handleOrientation, { passive: true });
     }
+
     // iOS: request on first user interaction
     window.addEventListener('touchstart', requestMotionPermission, { once: true, passive: true });
     window.addEventListener('click', requestMotionPermission, { once: true, passive: true });
@@ -368,6 +454,7 @@ export const HeroSection: React.FC = () => {
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('devicemotion', handleMotion);
       window.removeEventListener('deviceorientation', handleOrientation);
       window.removeEventListener('touchstart', requestMotionPermission);
       window.removeEventListener('click', requestMotionPermission);
