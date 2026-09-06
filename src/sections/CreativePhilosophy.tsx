@@ -142,6 +142,30 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Media unlock & decoder priming for iOS Safari & Android mobile decoders
+  useEffect(() => {
+    const unlockVideo = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      v.muted = true;
+      const p = v.play();
+      if (p !== undefined) {
+        p.then(() => {
+          v.pause();
+        }).catch(() => {});
+      }
+    };
+
+    unlockVideo();
+    window.addEventListener('touchstart', unlockVideo, { once: true, passive: true });
+    window.addEventListener('click', unlockVideo, { once: true, passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', unlockVideo);
+      window.removeEventListener('click', unlockVideo);
+    };
+  }, []);
+
   // Background frame extraction for instant 120fps reverse/forward scrubbing
   useEffect(() => {
     let isMounted = true;
@@ -248,13 +272,19 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
       // 1. Direct HTML5 video scrubbing (0 -> 100% timeline)
       const video = videoRef.current;
-      if (video && video.duration && !isNaN(video.duration)) {
-        const targetTime = Math.max(
-          0,
-          Math.min(video.duration - 0.05, smooth * video.duration)
-        );
-        if (Math.abs(video.currentTime - targetTime) > 0.02) {
-          video.currentTime = targetTime;
+      const duration =
+        video && video.duration && !isNaN(video.duration) && video.duration > 0
+          ? video.duration
+          : durationRef.current;
+      if (video && duration > 0) {
+        if (!video.seeking && video.readyState >= 2) {
+          const targetTime = Math.max(
+            0,
+            Math.min(duration - 0.05, smooth * duration)
+          );
+          if (Math.abs(video.currentTime - targetTime) > 0.04) {
+            video.currentTime = targetTime;
+          }
         }
       }
 
@@ -353,6 +383,16 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           preload="auto"
           muted
           playsInline
+          onLoadedMetadata={(e) => {
+            if (e.currentTarget.duration) {
+              durationRef.current = e.currentTarget.duration;
+            }
+          }}
+          onError={() => {
+            if (videoRef.current && !videoRef.current.src.includes('Turn%20toword')) {
+              videoRef.current.src = FALLBACK_VIDEO_URL;
+            }
+          }}
           className="absolute inset-0 w-full h-full object-cover object-[68%_center] pointer-events-none"
         />
 

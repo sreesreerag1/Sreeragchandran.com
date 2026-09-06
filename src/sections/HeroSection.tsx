@@ -50,6 +50,14 @@ const calculateDrawBounds = (
   return { shiftX, shiftY, drawWidth, drawHeight };
 };
 
+// Helper to detect mobile devices
+const isMobileDevice = () =>
+  typeof window !== 'undefined' &&
+  (window.innerWidth < 768 ||
+    'ontouchstart' in window ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
 export const HeroSection: React.FC = () => {
   // Visual Mood Theme: 'dark' (default) vs 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -150,12 +158,30 @@ export const HeroSection: React.FC = () => {
       // 0. Intro Video (Video 1) Rewind & Transition Trigger:
       if (currentScroll > 3) {
         if (introPhaseRef.current === 'EXPLORE') {
-          // First scroll detected: immediately trigger fast rewind to frame 0
-          introPhaseRef.current = 'REWINDING';
-          rewindStartProgressRef.current = introSmoothedProgressRef.current;
-          rewindStartTimeRef.current = performance.now();
-          rewindDurationRef.current = Math.max(250, Math.min(380, rewindStartProgressRef.current * 420));
-          setIsAtTop(false);
+          if (isMobileDevice()) {
+            // Instant seamless transition on mobile devices without frame rewinding lag
+            introPhaseRef.current = 'COMPLETE';
+            isTransitionCompleteRef.current = true;
+            setIsAtTop(false);
+            if (introVideoDarkRef.current) introVideoDarkRef.current.pause();
+            if (introVideoLightRef.current) introVideoLightRef.current.pause();
+            if (introContainerRef.current) {
+              introContainerRef.current.style.transition = 'opacity 250ms ease-out';
+              introContainerRef.current.style.opacity = '0';
+              setTimeout(() => {
+                if (introContainerRef.current && introPhaseRef.current === 'COMPLETE') {
+                  introContainerRef.current.style.visibility = 'hidden';
+                }
+              }, 260);
+            }
+          } else {
+            // Desktop: trigger rapid smooth rewind back to frame 0 via pre-cached canvas
+            introPhaseRef.current = 'REWINDING';
+            rewindStartProgressRef.current = introSmoothedProgressRef.current;
+            rewindStartTimeRef.current = performance.now();
+            rewindDurationRef.current = Math.max(250, Math.min(380, rewindStartProgressRef.current * 420));
+            setIsAtTop(false);
+          }
         }
       } else if (currentScroll <= 2) {
         // Return to absolute top: re-enable explore state
@@ -167,6 +193,10 @@ export const HeroSection: React.FC = () => {
             introContainerRef.current.style.transition = 'opacity 300ms ease-out';
             introContainerRef.current.style.opacity = '1';
             introContainerRef.current.style.visibility = 'visible';
+          }
+          if (isMobileDevice()) {
+            if (introVideoDarkRef.current && isDark) introVideoDarkRef.current.play().catch(() => {});
+            if (introVideoLightRef.current && !isDark) introVideoLightRef.current.play().catch(() => {});
           }
         }
       }
@@ -269,6 +299,7 @@ export const HeroSection: React.FC = () => {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (isMobileDevice()) return;
       if (introPhaseRef.current !== 'EXPLORE') return;
       if (e.touches && e.touches.length > 0) {
         const xNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
@@ -297,6 +328,47 @@ export const HeroSection: React.FC = () => {
       window.removeEventListener('wheel', handleWheel);
     };
   }, []);
+
+  // Media unlock & decoder priming for iOS Safari & Android mobile decoders
+  useEffect(() => {
+    const isMobile = isMobileDevice();
+
+    const unlockVideos = () => {
+      const videos = [
+        introVideoDarkRef.current,
+        videoDarkRef.current,
+        introVideoLightRef.current,
+        videoLightRef.current,
+      ];
+      videos.forEach((vid) => {
+        if (!vid) return;
+        vid.muted = true;
+        // On mobile: autoplay active creature intro, prime hero walking video
+        if (isMobile && ((vid === introVideoDarkRef.current && isDark) || (vid === introVideoLightRef.current && !isDark))) {
+          if (vid.paused && introPhaseRef.current === 'EXPLORE') {
+            vid.play().catch(() => {});
+          }
+        } else {
+          const p = vid.play();
+          if (p !== undefined) {
+            p.then(() => {
+              vid.pause();
+            }).catch(() => {});
+          }
+        }
+      });
+    };
+
+    unlockVideos();
+
+    window.addEventListener('touchstart', unlockVideos, { once: true, passive: true });
+    window.addEventListener('click', unlockVideos, { once: true, passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', unlockVideos);
+      window.removeEventListener('click', unlockVideos);
+    };
+  }, [isDark]);
 
   // Reusable frame extractor
   const extractFrames = async (
@@ -479,9 +551,14 @@ export const HeroSection: React.FC = () => {
             }
           }
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
-          const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
-          if (Math.abs(introVideoDarkRef.current.currentTime - targetTime) > 0.02) {
-            introVideoDarkRef.current.currentTime = targetTime;
+          if (!isMobileDevice()) {
+            const v = introVideoDarkRef.current;
+            if (!v.seeking && v.readyState >= 2) {
+              const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
+              if (Math.abs(v.currentTime - targetTime) > 0.04) {
+                v.currentTime = targetTime;
+              }
+            }
           }
         }
 
@@ -507,9 +584,14 @@ export const HeroSection: React.FC = () => {
             }
           }
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
-          const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
-          if (Math.abs(introVideoLightRef.current.currentTime - targetTime) > 0.02) {
-            introVideoLightRef.current.currentTime = targetTime;
+          if (!isMobileDevice()) {
+            const v = introVideoLightRef.current;
+            if (!v.seeking && v.readyState >= 2) {
+              const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
+              if (Math.abs(v.currentTime - targetTime) > 0.04) {
+                v.currentTime = targetTime;
+              }
+            }
           }
         }
       }
@@ -547,9 +629,12 @@ export const HeroSection: React.FC = () => {
           }
         }
       } else if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
-        const targetTime = smoothed * Math.max(0, darkHeroDurationRef.current - 0.05);
-        if (Math.abs(videoDarkRef.current.currentTime - targetTime) > 0.03) {
-          videoDarkRef.current.currentTime = targetTime;
+        const v = videoDarkRef.current;
+        if (!v.seeking && v.readyState >= 2) {
+          const targetTime = smoothed * Math.max(0, darkHeroDurationRef.current - 0.05);
+          if (Math.abs(v.currentTime - targetTime) > 0.04) {
+            v.currentTime = targetTime;
+          }
         }
       }
 
@@ -575,9 +660,12 @@ export const HeroSection: React.FC = () => {
           }
         }
       } else if (videoLightRef.current && lightHeroDurationRef.current > 0) {
-        const targetTime = smoothed * Math.max(0, lightHeroDurationRef.current - 0.05);
-        if (Math.abs(videoLightRef.current.currentTime - targetTime) > 0.03) {
-          videoLightRef.current.currentTime = targetTime;
+        const v = videoLightRef.current;
+        if (!v.seeking && v.readyState >= 2) {
+          const targetTime = smoothed * Math.max(0, lightHeroDurationRef.current - 0.05);
+          if (Math.abs(v.currentTime - targetTime) > 0.04) {
+            v.currentTime = targetTime;
+          }
         }
       }
 
@@ -794,6 +882,8 @@ export const HeroSection: React.FC = () => {
                     ref={introVideoDarkRef}
                     src={DARK_INTRO_VIDEO_URL}
                     poster={DARK_CREATURE_POSTER}
+                    autoPlay
+                    loop
                     muted
                     playsInline
                     preload="auto"
@@ -820,6 +910,8 @@ export const HeroSection: React.FC = () => {
                   <video
                     ref={introVideoLightRef}
                     src={LIGHT_INTRO_VIDEO_URL}
+                    autoPlay
+                    loop
                     muted
                     playsInline
                     preload={isDark ? 'none' : 'auto'}
