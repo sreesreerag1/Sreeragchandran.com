@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Reveal } from '../components/Reveal';
 import CreativePhilosophy from './CreativePhilosophy';
 
@@ -96,6 +96,21 @@ export const HeroSection: React.FC = () => {
   const introTargetProgressRef = useRef(0.5);
   const introSmoothedProgressRef = useRef(0.5);
   const [isAtTop, setIsAtTop] = useState(true);
+
+  // iOS Safari Motion & Gyro Permission state
+  const [isMotionPermNeeded, setIsMotionPermNeeded] = useState(false);
+  const [isMotionActive, setIsMotionActive] = useState(false);
+  const isMotionActiveRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+    ) {
+      setIsMotionPermNeeded(true);
+    }
+  }, []);
 
   // Direct DOM ref for buttery-smooth hardware-accelerated downward push transition (zero React re-renders)
   const pushContainerRef = useRef<HTMLDivElement>(null);
@@ -296,6 +311,72 @@ export const HeroSection: React.FC = () => {
     };
   }, []);
 
+  // =========================================================================
+  // Mobile Motion Controller: Strictly Left-to-Right Tilt Only
+  // Mathematically isolates the horizontal roll axis using:
+  //   roll = atan2(sin(gamma), cos(gamma) * sin(beta))
+  // This completely decouples horizontal tilt from front-to-back pitch:
+  // Tilting the phone forward/backward produces ZERO movement on the creature.
+  // =========================================================================
+  const handleOrientation = useCallback((e: DeviceOrientationEvent) => {
+    if (!isMobileDevice()) return;
+    if (introPhaseRef.current !== 'EXPLORE') return;
+    if (e.gamma === null || typeof e.gamma !== 'number') return;
+
+    if (!isMotionActiveRef.current) {
+      isMotionActiveRef.current = true;
+      setIsMotionActive(true);
+      setIsMotionPermNeeded(false);
+    }
+
+    let gamma = e.gamma;
+    // Protect against 180° Euler angle inversion when leaning forward past vertical
+    if (gamma > 90) gamma = 180 - gamma;
+    else if (gamma < -90) gamma = -180 - gamma;
+
+    // Extract roll angle in screen plane, decoupled from pitch (beta)
+    const beta = e.beta !== null && typeof e.beta === 'number' ? e.beta : 70;
+    const bRad = (beta * Math.PI) / 180;
+    const gRad = (gamma * Math.PI) / 180;
+    const sinB = Math.max(0.15, Math.sin(bRad));
+    const rollRad = Math.atan2(Math.sin(gRad), Math.cos(gRad) * sinB);
+    const rollDeg = (rollRad * 180) / Math.PI;
+
+    // Natural ergonomic tilt range: ±22° wrist tilt
+    const maxRoll = 22.0;
+    const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, rollDeg));
+
+    // Map strictly left-to-right:
+    // Tilting phone left  (rollDeg < 0) -> 1.0 (creature looks left)
+    // Upright             (rollDeg = 0) -> 0.5 (creature looks center)
+    // Tilting phone right (rollDeg > 0) -> 0.0 (creature looks right)
+    const tiltNorm = 0.5 - clampedRoll / (maxRoll * 2.0);
+    introTargetProgressRef.current = Math.max(0, Math.min(1, tiltNorm));
+  }, []);
+
+  // Request motion permission on iOS 13+ on user interaction
+  const requestMotionPermission = useCallback(async () => {
+    if (
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+    ) {
+      try {
+        const perm = await (DeviceOrientationEvent as any).requestPermission();
+        if (perm === 'granted') {
+          setIsMotionPermNeeded(false);
+          window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+        } else {
+          setIsMotionPermNeeded(false);
+        }
+      } catch (err) {
+        console.warn('Motion permission request error:', err);
+      }
+    } else {
+      setIsMotionPermNeeded(false);
+      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+    }
+  }, [handleOrientation]);
+
   // Intro video controller: Mouse hover on Desktop, Device Motion (Gyroscope Tilt) on Mobile
   useEffect(() => {
     // Desktop mouse hover controller
@@ -318,59 +399,18 @@ export const HeroSection: React.FC = () => {
       }
     };
 
-    // =========================================================================
-    // Mobile Motion Controller: Strictly Left-to-Right Tilt Only
-    // Mathematically isolates the horizontal roll axis using:
-    //   roll = atan2(sin(gamma), cos(gamma) * sin(beta))
-    // This completely decouples horizontal tilt from front-to-back pitch:
-    // Tilting the phone forward/backward produces ZERO movement on the creature.
-    // =========================================================================
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (!isMobileDevice()) return;
+    const handleTouchMove = (e: TouchEvent) => {
       if (introPhaseRef.current !== 'EXPLORE') return;
-      if (e.gamma === null || typeof e.gamma !== 'number') return;
-
-      let gamma = e.gamma;
-      // Protect against 180° Euler angle inversion when leaning forward past vertical
-      if (gamma > 90) gamma = 180 - gamma;
-      else if (gamma < -90) gamma = -180 - gamma;
-
-      // Extract roll angle in screen plane, decoupled from pitch (beta)
-      const beta = e.beta !== null && typeof e.beta === 'number' ? e.beta : 70;
-      const bRad = (beta * Math.PI) / 180;
-      const gRad = (gamma * Math.PI) / 180;
-      const sinB = Math.max(0.15, Math.sin(bRad));
-      const rollRad = Math.atan2(Math.sin(gRad), Math.cos(gRad) * sinB);
-      const rollDeg = (rollRad * 180) / Math.PI;
-
-      // Natural ergonomic tilt range: ±22° wrist tilt
-      const maxRoll = 22.0;
-      const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, rollDeg));
-
-      // Map strictly left-to-right:
-      // Tilting phone left  (rollDeg < 0) -> 1.0 (creature looks left)
-      // Upright             (rollDeg = 0) -> 0.5 (creature looks center)
-      // Tilting phone right (rollDeg > 0) -> 0.0 (creature looks right)
-      const tiltNorm = 0.5 - clampedRoll / (maxRoll * 2.0);
-      introTargetProgressRef.current = Math.max(0, Math.min(1, tiltNorm));
-    };
-
-    // Request motion permission on iOS 13+ on user interaction
-    const requestMotionPermission = async () => {
-      if (
-        typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof (DeviceOrientationEvent as any).requestPermission === 'function'
-      ) {
-        try {
-          const perm = await (DeviceOrientationEvent as any).requestPermission();
-          if (perm === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation, { passive: true });
-          }
-        } catch {}
+      // If motion is actively streaming real tilt data, do not let touch drag conflict
+      if (isMotionActiveRef.current) return;
+      if (e.touches && e.touches.length > 0) {
+        const xNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
+        introTargetProgressRef.current = xNorm;
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('wheel', handleWheel, { passive: true });
 
     // Standard mobile browsers (Android Chrome, etc.): listen directly on mount
@@ -381,18 +421,19 @@ export const HeroSection: React.FC = () => {
       window.addEventListener('deviceorientation', handleOrientation, { passive: true });
     }
 
-    // iOS WebKit: request on first user interaction
-    window.addEventListener('touchstart', requestMotionPermission, { once: true, passive: true });
-    window.addEventListener('click', requestMotionPermission, { once: true, passive: true });
+    // iOS WebKit: listen on click and touchend
+    window.addEventListener('click', requestMotionPermission, { passive: true });
+    window.addEventListener('touchend', requestMotionPermission, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('touchstart', requestMotionPermission);
       window.removeEventListener('click', requestMotionPermission);
+      window.removeEventListener('touchend', requestMotionPermission);
     };
-  }, []);
+  }, [handleOrientation, requestMotionPermission]);
 
   // Media unlock & decoder priming for iOS Safari & Android mobile decoders
   useEffect(() => {
@@ -1235,9 +1276,9 @@ export const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Initial Interactive Hover Prompt: positioned above bottom button */}
+            {/* Interactive Prompt / Motion Activator for Mobile */}
             <div
-              className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-all duration-300 pointer-events-none ${
+              className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-all duration-300 pointer-events-auto ${
                 isDark
                   ? 'border-white/20 bg-[#0B0B0B]/80 text-[#F5F5F5]'
                   : 'border-[#3A3A3A]/20 bg-white/80 text-[#3A3A3A]'
@@ -1245,12 +1286,28 @@ export const HeroSection: React.FC = () => {
                 isAtTop && !showCue ? 'opacity-100' : 'opacity-0'
               }`}
             >
-              <span
-                className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
-                  isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
-                }`}
-              />
-              <span>HOVER ↔ EXPLORE SCENE</span>
+              {isMotionPermNeeded ? (
+                <button
+                  type="button"
+                  onClick={requestMotionPermission}
+                  className="flex items-center gap-2 cursor-pointer font-bold tracking-[0.24em] text-white hover:text-[#C8C1B5] transition-colors"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>TAP TO ACTIVATE MOTION TILT ✦</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2.5 pointer-events-none">
+                  <span
+                    className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
+                      isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
+                    }`}
+                  />
+                  <span className="md:hidden">
+                    {isMotionActive ? 'TILT DEVICE ↔ EXPLORE' : 'SWIPE OR TILT ↔ EXPLORE'}
+                  </span>
+                  <span className="hidden md:inline">HOVER ↔ EXPLORE SCENE</span>
+                </div>
+              )}
             </div>
 
             {/* Dynamic Status Cue during scroll stages: positioned above bottom button */}
