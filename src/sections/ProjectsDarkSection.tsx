@@ -167,6 +167,8 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
       <motion.div
         style={{ scale }}
         onClick={() => onOpenModal(project.id)}
+        data-cursor="project"
+        data-cursor-text="VIEW"
         className="group/card cursor-pointer relative w-full h-[85vh] min-h-[560px] max-h-[860px] rounded-3xl md:rounded-[36px] bg-[#0B0B0B] border border-white/[0.15] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-5 sm:p-7 md:p-10 transition-colors hover:border-white/30"
       >
         {/* Card Header */}
@@ -192,6 +194,8 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
               e.stopPropagation();
               onOpenModal(project.id);
             }}
+            data-cursor="project"
+            data-cursor-text="VIEW"
             className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium tracking-[0.1em] uppercase text-[#F5F5F2] transition-all duration-300 w-fit shrink-0 backdrop-blur-md"
           >
             <span>View Project</span>

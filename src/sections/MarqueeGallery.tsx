@@ -119,6 +119,8 @@ export const MarqueeGallery: React.FC = () => {
                 type="button"
                 key={`r1-${item.id}-${idx}`}
                 onClick={() => setSelectedProject(item)}
+                data-cursor="project"
+                data-cursor-text="VIEW"
                 className="group relative w-[320px] sm:w-[380px] md:w-[420px] h-[200px] sm:h-[240px] md:h-[270px] rounded-2xl overflow-hidden bg-[#0B0B0B] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl shrink-0 cursor-pointer transition-all duration-500 hover:-translate-y-1 text-left"
                 aria-label={`Open case study for ${item.title}`}
               >
@@ -166,6 +168,8 @@ export const MarqueeGallery: React.FC = () => {
                 type="button"
                 key={`r2-${item.id}-${idx}`}
                 onClick={() => setSelectedProject(item)}
+                data-cursor="project"
+                data-cursor-text="VIEW"
                 className="group relative w-[320px] sm:w-[380px] md:w-[420px] h-[200px] sm:h-[240px] md:h-[270px] rounded-2xl overflow-hidden bg-[#0B0B0B] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl shrink-0 cursor-pointer transition-all duration-500 hover:-translate-y-1 text-left"
                 aria-label={`Open case study for ${item.title}`}
               >

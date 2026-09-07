@@ -1,6 +1,7 @@
 import React from 'react';
 import { Hexagon, ArrowUpRight } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
+import { Magnetic } from '../components/Magnetic';
 
 const SOCIALS = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/sreerag-chandran-63228950/' },
@@ -34,13 +35,15 @@ export const Footer: React.FC = () => {
 
           <Reveal delay={180}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <a
-                href="mailto:sreerag1@live.in"
-                className="group inline-flex items-center gap-3 rounded-full border border-white/40 bg-transparent text-[#F5F5F2] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-8 sm:px-9 py-4 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase transition-all duration-300 shadow-2xl cursor-pointer"
-              >
-                <span>START A CONVERSATION →</span>
-                <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:rotate-45" />
-              </a>
+              <Magnetic strength={0.25} maxOffset={4}>
+                <a
+                  href="mailto:sreerag1@live.in"
+                  className="group inline-flex items-center gap-3 rounded-full border border-white/40 bg-transparent text-[#F5F5F2] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-8 sm:px-9 py-4 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase transition-all duration-300 shadow-2xl cursor-pointer"
+                >
+                  <span>START A CONVERSATION →</span>
+                  <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:rotate-45" />
+                </a>
+              </Magnetic>
             </div>
           </Reveal>
         </div>

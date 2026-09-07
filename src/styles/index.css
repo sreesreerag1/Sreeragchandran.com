@@ -34,6 +34,24 @@
   }
 }
 
+/* Desktop Custom Cursor Integration (Nabil Issa Inspired) */
+@media (hover: hover) and (pointer: fine) {
+  body,
+  a,
+  button,
+  [role="button"],
+  .cursor-pointer {
+    cursor: none !important;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    cursor: auto !important;
+  }
+}
+
 .font-kanit {
   font-family: 'Kanit', sans-serif;
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { PortfolioProject } from '../data/portfolioProjects';
+import { Magnetic } from './Magnetic';
 
 interface ProjectCaseStudyModalProps {
   project: PortfolioProject | null;
@@ -84,14 +85,18 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 {project.title}
               </h2>
 
-              <button
-                onClick={onClose}
-                aria-label="Close project modal"
-                className="group flex items-center gap-2 font-mono text-xs sm:text-[13px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors px-3 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 shrink-0 cursor-pointer"
-              >
-                <span>CLOSE</span>
-                <X className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-90 text-white/80" />
-              </button>
+              <Magnetic strength={0.25} maxOffset={4}>
+                <button
+                  onClick={onClose}
+                  aria-label="Close project modal"
+                  data-cursor="close"
+                  data-cursor-text="CLOSE"
+                  className="group flex items-center gap-2 font-mono text-xs sm:text-[13px] uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors px-3 py-1.5 rounded-full border border-white/15 hover:border-white/40 bg-white/5 shrink-0 cursor-pointer"
+                >
+                  <span>CLOSE</span>
+                  <X className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-90 text-white/80" />
+                </button>
+              </Magnetic>
             </div>
 
             {/* Sub-header: CATEGORY • YEAR • DISCIPLINE */}
@@ -117,7 +122,11 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
           <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-14 lg:px-16 py-8 sm:py-12 md:py-16 flex flex-col gap-14 sm:gap-20 md:gap-28">
             {/* 1. Large Hero Image (Full Width, High Impact) */}
             <section className="w-full flex flex-col gap-3">
-              <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-neutral-900 shadow-2xl">
+              <div
+                data-cursor="explore"
+                data-cursor-text="EXPLORE"
+                className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-neutral-900 shadow-2xl"
+              >
                 <img
                   src={project.heroImage}
                   alt={`${project.title} Hero Key Visual`}
@@ -153,7 +162,11 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                         key={`first-${img.id}-${idx}`}
                         className={`w-full ${colSpan} flex flex-col gap-2.5`}
                       >
-                        <div className="relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-neutral-900 shadow-lg group">
+                        <div
+                          data-cursor="explore"
+                          data-cursor-text="EXPLORE"
+                          className="relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-neutral-900 shadow-lg group"
+                        >
                           <img
                             src={img.src}
                             alt={`${project.title} gallery documentation`}
@@ -210,7 +223,11 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                         key={`second-${img.id}-${idx}`}
                         className={`w-full ${colSpan} flex flex-col gap-2.5`}
                       >
-                        <div className="relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-neutral-900 shadow-lg group">
+                        <div
+                          data-cursor="explore"
+                          data-cursor-text="EXPLORE"
+                          className="relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-neutral-900 shadow-lg group"
+                        >
                           <img
                             src={img.src}
                             alt={`${project.title} final installation view`}
