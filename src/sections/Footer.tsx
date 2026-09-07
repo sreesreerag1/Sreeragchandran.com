@@ -65,14 +65,19 @@ export const Footer: React.FC = () => {
             <span className="font-mono text-xs uppercase tracking-[0.22em] text-[#707070] block mb-3.5 font-semibold">
               Direct Inquiries
             </span>
-            <a
-              href="mailto:sreerag1@live.in"
-              className="font-sans text-sm sm:text-base text-[#F5F5F2] hover:text-white font-light underline underline-offset-4 decoration-white/30 transition-colors"
-            >
-              sreerag1@live.in
-            </a>
-            <div className="mt-3 font-mono text-[11px] text-[#707070] uppercase tracking-widest">
-              Available for Directing &amp; Collaborations
+            <div className="space-y-2">
+              <a
+                href="mailto:sreerag1@live.in"
+                className="font-sans text-sm sm:text-base text-[#F5F5F2] hover:text-white font-light underline underline-offset-4 decoration-white/30 transition-colors block"
+              >
+                sreerag1@live.in
+              </a>
+              <a
+                href="tel:+971544940801"
+                className="font-sans text-sm sm:text-base text-[#F5F5F2] hover:text-white font-light underline underline-offset-4 decoration-white/30 transition-colors block"
+              >
+                +971 544940801
+              </a>
             </div>
           </div>
 
