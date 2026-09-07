@@ -1016,21 +1016,21 @@ export const HeroSection: React.FC = () => {
              ===================================================================== */}
           <div
             className={`relative h-screen h-[100dvh] w-full overflow-hidden flex flex-col justify-between pt-12 sm:pt-16 md:pt-20 pb-4 sm:pb-8 md:pb-12 md:px-14 lg:px-16 transition-colors duration-700 ${
-              isDark ? 'bg-[#050505] text-[#F5F5F5]' : 'bg-[#FFFFFF] text-[#3A3A3A]'
+              isDark ? 'bg-[#050505] text-white' : 'bg-[#FFFFFF] text-[#3A3A3A]'
             }`}
           >
             {/* Mobile Top Row: Meta Header */}
             <div className="md:hidden flex items-center justify-between pointer-events-auto px-1 pb-1">
               <span
                 className={`font-mono text-[10px] uppercase tracking-[0.2em] font-medium transition-colors duration-600 ${
-                  isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
+                  isDark ? 'text-white' : 'text-[#555555]'
                 }`}
               >
                 DUBAI • 2026
               </span>
               <span
                 className={`font-mono text-[9px] uppercase tracking-[0.2em] font-medium transition-colors duration-600 ${
-                  isDark ? 'text-[#707070]' : 'text-[#777777]'
+                  isDark ? 'text-white' : 'text-[#777777]'
                 }`}
               >
                 STUDIO DIRECTING
@@ -1045,7 +1045,7 @@ export const HeroSection: React.FC = () => {
                   <Reveal key={service} delay={100 + index * 100}>
                     <div
                       className={`font-mono text-[11px] uppercase tracking-[0.2em] font-medium transition-colors duration-600 ${
-                        isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
+                        isDark ? 'text-white' : 'text-[#555555]'
                       }`}
                     >
                       {service}
@@ -1059,14 +1059,14 @@ export const HeroSection: React.FC = () => {
                 <div className="text-right flex flex-col items-end gap-1">
                   <span
                     className={`font-mono text-[11px] uppercase tracking-[0.2em] font-medium transition-colors duration-600 ${
-                      isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
+                      isDark ? 'text-white' : 'text-[#555555]'
                     }`}
                   >
                     DIRECTING GLOBALLY
                   </span>
                   <span
                     className={`font-mono text-[10px] uppercase tracking-[0.16em] transition-colors duration-600 ${
-                      isDark ? 'text-[#707070]' : 'text-[#777777]'
+                      isDark ? 'text-white' : 'text-[#777777]'
                     }`}
                   >
                     DUBAI • STUDIO 2026
@@ -1239,7 +1239,7 @@ export const HeroSection: React.FC = () => {
                       >
                         <h1
                           className={`font-kanit text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-[50px] font-semibold tracking-[-0.025em] uppercase leading-[1.12] md:leading-[1.12] drop-shadow-sm transition-colors duration-600 ${
-                            isDark ? 'text-[#F5F5F5]' : 'text-[#3A3A3A]'
+                            isDark ? 'text-white' : 'text-[#3A3A3A]'
                           }`}
                         >
                           <span className="md:hidden">
@@ -1267,7 +1267,7 @@ export const HeroSection: React.FC = () => {
                       >
                         <h2
                           className={`font-kanit text-2xl sm:text-3xl md:text-4xl lg:text-[44px] xl:text-[50px] font-semibold tracking-[-0.025em] uppercase leading-[1.12] md:leading-[1.12] drop-shadow-sm transition-colors duration-600 ${
-                            isDark ? 'text-[#F5F5F5]' : 'text-[#3A3A3A]'
+                            isDark ? 'text-white' : 'text-[#3A3A3A]'
                           }`}
                         >
                           <span className="md:hidden">
@@ -1286,7 +1286,7 @@ export const HeroSection: React.FC = () => {
                         <p
                           ref={supportTextRef}
                           className={`mt-2 sm:mt-3 md:mt-5 max-w-sm sm:max-w-md text-xs sm:text-xs md:text-sm font-normal leading-relaxed drop-shadow-sm will-change-transform transition-all duration-75 ease-out transition-colors duration-600 ${
-                            isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
+                            isDark ? 'text-white' : 'text-[#555555]'
                           }`}
                           style={{
                             opacity: 0,
@@ -1304,12 +1304,12 @@ export const HeroSection: React.FC = () => {
                 <div
                   className={`md:hidden mt-3 pt-2.5 border-t flex items-center justify-between font-mono text-[9px] uppercase tracking-wider w-full transition-colors duration-600 ${
                     isDark
-                      ? 'border-white/15 text-[#A6A6A6]'
+                      ? 'border-white/20 text-white'
                       : 'border-[#3A3A3A]/20 text-[#555555]'
                   }`}
                 >
                   <span>CREATIVE DIRECTION • BRAND IDENTITY • EXPERIENTIAL</span>
-                  <span className={isDark ? 'text-[#707070]' : 'text-[#777777]'}>
+                  <span className={isDark ? 'text-white' : 'text-[#777777]'}>
                     DUBAI • 2026
                   </span>
                 </div>
@@ -1326,20 +1326,20 @@ export const HeroSection: React.FC = () => {
                     <div
                       className={`space-y-2.5 border-l-2 pl-5 backdrop-blur-sm py-2 transition-colors duration-600 ${
                         isDark
-                          ? 'border-white/20 bg-white/[0.03]'
+                          ? 'border-white/30 bg-white/[0.04]'
                           : 'border-[#3A3A3A]/25 bg-[#3A3A3A]/[0.02]'
                       }`}
                     >
                       <p
                         className={`text-xs sm:text-sm font-semibold uppercase tracking-[0.08em] transition-colors duration-600 ${
-                          isDark ? 'text-[#F5F5F5]' : 'text-[#3A3A3A]'
+                          isDark ? 'text-white' : 'text-[#3A3A3A]'
                         }`}
                       >
                         15 Years of Turning Ideas into Reality
                       </p>
                       <p
                         className={`text-xs sm:text-sm font-light leading-relaxed transition-colors duration-600 ${
-                          isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
+                          isDark ? 'text-white' : 'text-[#555555]'
                         }`}
                       >
                         From brand identities and campaigns to large-scale live experiences, I’ve worked across disciplines where creativity needs to perform in the real world — not just look good on a presentation slide.
@@ -1349,13 +1349,13 @@ export const HeroSection: React.FC = () => {
                     {/* Disciplines / Combine */}
                     <div
                       className={`mt-6 sm:mt-8 pt-5 border-t transition-colors duration-600 ${
-                        isDark ? 'border-white/15' : 'border-[#3A3A3A]/15'
+                        isDark ? 'border-white/20' : 'border-[#3A3A3A]/15'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span
                           className={`font-mono text-[10px] uppercase tracking-[0.24em] font-semibold transition-colors duration-600 ${
-                            isDark ? 'text-[#707070]' : 'text-[#777777]'
+                            isDark ? 'text-white' : 'text-[#777777]'
                           }`}
                         >
                           CORE DISCIPLINES
@@ -1374,14 +1374,14 @@ export const HeroSection: React.FC = () => {
                             key={discipline}
                             className={`flex items-center justify-between text-xs sm:text-[13px] font-medium tracking-tight py-1.5 border-b group cursor-default transition-colors duration-600 ${
                               isDark
-                                ? 'text-[#F5F5F5] border-white/15 hover:text-white'
+                                ? 'text-white border-white/20 hover:text-white'
                                 : 'text-[#3A3A3A] border-[#3A3A3A]/15 hover:text-black'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <span
                                 className={`font-mono text-[10px] transition-colors duration-600 ${
-                                  isDark ? 'text-[#707070]' : 'text-[#777777]'
+                                  isDark ? 'text-white' : 'text-[#777777]'
                                 }`}
                               >
                                 0{idx + 1}
@@ -1393,7 +1393,7 @@ export const HeroSection: React.FC = () => {
                             <span
                               className={`font-mono text-xs transition-colors duration-600 ${
                                 isDark
-                                  ? 'text-[#707070] group-hover:text-white'
+                                  ? 'text-white group-hover:text-white'
                                   : 'text-[#777777] group-hover:text-[#3A3A3A]'
                               }`}
                             >
@@ -1413,7 +1413,7 @@ export const HeroSection: React.FC = () => {
               <div
                 className={`flex items-center gap-2.5 sm:gap-3 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full border backdrop-blur-md shadow-xl transition-all duration-500 ${
                   isDark
-                    ? 'border-white/20 bg-[#0B0B0B]/90 text-[#F5F5F5] shadow-black/50'
+                    ? 'border-white/20 bg-[#0B0B0B]/90 text-white shadow-black/50'
                     : 'border-[#3A3A3A]/25 bg-white/90 text-[#3A3A3A] shadow-black/15'
                 }`}
               >
@@ -1454,7 +1454,7 @@ export const HeroSection: React.FC = () => {
                   className={`font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-medium transition-colors duration-300 cursor-pointer ${
                     !isDark
                       ? 'text-[#1F1F1F] font-semibold drop-shadow-sm'
-                      : 'text-[#707070] hover:text-white'
+                      : 'text-white/70 hover:text-white'
                   }`}
                 >
                   LIGHT
@@ -1466,7 +1466,7 @@ export const HeroSection: React.FC = () => {
             <div
               className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-all duration-300 pointer-events-auto ${
                 isDark
-                  ? 'border-white/20 bg-[#0B0B0B]/80 text-[#F5F5F5]'
+                  ? 'border-white/20 bg-[#0B0B0B]/80 text-white'
                   : 'border-[#3A3A3A]/20 bg-white/80 text-[#3A3A3A]'
               } ${
                 isAtTop && !showCue ? 'opacity-100' : 'opacity-0'
@@ -1487,10 +1487,10 @@ export const HeroSection: React.FC = () => {
                   <div className="flex items-center gap-2.5 pointer-events-none">
                     <span
                       className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
-                        isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
+                        isDark ? 'bg-white' : 'bg-[#555555]'
                       }`}
                     />
-                    <span>
+                    <span className={isDark ? 'text-white' : ''}>
                       {isMotionActive ? 'TILT DEVICE ↔ EXPLORE' : 'SWIPE OR TILT ↔ EXPLORE'}
                     </span>
                   </div>
@@ -1501,27 +1501,27 @@ export const HeroSection: React.FC = () => {
               <div className="hidden md:flex items-center gap-2.5 pointer-events-none">
                 <span
                   className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
-                    isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
+                    isDark ? 'bg-white' : 'bg-[#555555]'
                   }`}
                 />
-                <span>HOVER ↔ EXPLORE SCENE</span>
+                <span className={isDark ? 'text-white' : ''}>HOVER ↔ EXPLORE SCENE</span>
               </div>
             </div>
 
             {/* Dynamic Status Cue during scroll stages: positioned above bottom button */}
             <div
               className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] transition-opacity duration-300 pointer-events-none z-20 ${
-                isDark ? 'text-[#A6A6A6]' : 'text-[#555555]'
+                isDark ? 'text-white' : 'text-[#555555]'
               } ${
                 showCue ? 'opacity-100' : 'opacity-0'
               }`}
             >
               <span
                 className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
-                  isDark ? 'bg-[#A6A6A6]' : 'bg-[#555555]'
+                  isDark ? 'bg-white' : 'bg-[#555555]'
                 }`}
               />
-              <span>{cueText}</span>
+              <span className={isDark ? 'text-white' : ''}>{cueText}</span>
             </div>
           </div>
         </div>

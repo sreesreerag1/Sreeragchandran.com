@@ -426,7 +426,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         className="relative z-10 w-full flex items-center justify-end pb-2.5 sm:pb-4 border-b border-white/15 flex-shrink-0"
         style={{ opacity: 0 }}
       >
-        <div className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white/50 font-medium">
+        <div className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white font-medium">
           BASED IN DUBAI • STUDIO 2026
         </div>
       </div>
@@ -452,7 +452,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           </h1>
 
           {/* Role */}
-          <p className="font-sans text-[10px] sm:text-xs md:text-[14px] uppercase tracking-[0.2em] text-white/65 font-medium mt-1 sm:mt-1.5">
+          <p className="font-sans text-[10px] sm:text-xs md:text-[14px] uppercase tracking-[0.2em] text-white font-medium mt-1 sm:mt-1.5">
             Creative Director
           </p>
 
@@ -464,17 +464,17 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           </div>
 
           {/* Supporting Paragraph 1 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-2 sm:mt-3 lg:mt-4 max-w-xl">
+          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-2 sm:mt-3 lg:mt-4 max-w-xl">
             I’m Sreerag Chandran, a multidisciplinary Creative Director with 15 years of experience across advertising, branding, live experiences and visual storytelling.
           </p>
 
           {/* Supporting Paragraph 2 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
+          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
             I believe the strongest ideas don’t belong to a single medium. They can live on a billboard, transform a space, become an immersive experience or exist on a screen.
           </p>
 
           {/* Supporting Paragraph 3 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white/80 leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
+          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
             My work sits at the intersection of strategy, storytelling and design — creating ideas that are not only visually distinctive, but built to connect with people.
           </p>
         </div>
@@ -492,15 +492,15 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         className="relative z-10 pt-2 sm:pt-4 border-t border-white/15 flex-shrink-0"
         style={{ opacity: 0 }}
       >
-        <div className="flex flex-wrap items-center gap-y-1 font-mono text-[9px] sm:text-xs uppercase tracking-[0.14em] sm:tracking-[0.16em] text-white/70 font-medium">
+        <div className="flex flex-wrap items-center gap-y-1 font-mono text-[9px] sm:text-xs uppercase tracking-[0.14em] sm:tracking-[0.16em] text-white font-medium">
           <span className="hover:text-white transition-colors cursor-default">Brand Identity</span>
-          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
+          <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
           <span className="hover:text-white transition-colors cursor-default">Experiential Concepts</span>
-          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
+          <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
           <span className="hover:text-white transition-colors cursor-default">Campaign Ideation</span>
-          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
+          <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
           <span className="hover:text-white transition-colors cursor-default">Visual Narrative</span>
-          <span className="text-white/30 mx-2 sm:mx-4 font-light select-none">|</span>
+          <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
           <span className="hover:text-white transition-colors cursor-default">Creative Direction</span>
         </div>
       </div>

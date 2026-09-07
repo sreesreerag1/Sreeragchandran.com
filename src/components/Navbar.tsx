@@ -32,9 +32,9 @@ export const Navbar: React.FC = () => {
         <Reveal delay={0} className="flex items-center">
           <a
             href="#"
-            className="group flex items-center text-[#F5F5F2] transition-opacity hover:opacity-80"
+            className="group flex items-center text-white transition-opacity hover:opacity-80"
           >
-            <span className="font-sans text-[11px] sm:text-sm font-semibold tracking-[0.14em] sm:tracking-[0.16em] text-[#F5F5F2] uppercase">
+            <span className="font-sans text-[11px] sm:text-sm font-semibold tracking-[0.14em] sm:tracking-[0.16em] text-white uppercase">
               SREERAG CHANDRAN
             </span>
           </a>
@@ -46,7 +46,7 @@ export const Navbar: React.FC = () => {
             <Reveal key={link.label} delay={100 + index * 80}>
               <a
                 href={link.href}
-                className="font-sans text-xs uppercase tracking-[0.16em] text-[#A6A6A6] hover:text-[#F5F5F2] font-medium transition-colors duration-300"
+                className="font-sans text-xs uppercase tracking-[0.16em] text-white hover:text-white/80 font-medium transition-colors duration-300"
               >
                 {link.label}
               </a>
@@ -58,7 +58,7 @@ export const Navbar: React.FC = () => {
         <Reveal delay={450}>
           <a
             href="#contact"
-            className="group inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-white/30 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-[#F5F5F2] px-3.5 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-xs font-mono tracking-[0.14em] uppercase text-[#F5F5F2] transition-all duration-300 cursor-pointer shadow-sm"
+            className="group inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-white/30 bg-white/[0.04] hover:bg-white hover:text-[#050505] hover:border-white px-3.5 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-xs font-mono tracking-[0.14em] uppercase text-white transition-all duration-300 cursor-pointer shadow-sm"
           >
             <span className="sm:hidden">CONTACT →</span>
             <span className="hidden sm:inline">START A CONVERSATION →</span>
