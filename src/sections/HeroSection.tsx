@@ -1293,7 +1293,7 @@ export const HeroSection: React.FC = () => {
                             transform: 'translateY(15px)',
                           }}
                         >
-                          I build ideas that move between brands, spaces, screens and culture — turning strategy into visual stories people remember.
+                          I build ideas that move between brands, spaces, screens and culture, turning strategy into visual stories people remember.
                         </p>
                       </div>
                     </div>
@@ -1342,7 +1342,7 @@ export const HeroSection: React.FC = () => {
                           isDark ? 'text-white' : 'text-[#555555]'
                         }`}
                       >
-                        From brand identities and campaigns to large-scale live experiences, I’ve worked across disciplines where creativity needs to perform in the real world — not just look good on a presentation slide.
+                        From brand identities and campaigns to large-scale live experiences, I’ve worked across disciplines where creativity needs to perform in the real world, not just look good on a presentation slide.
                       </p>
                     </div>
 

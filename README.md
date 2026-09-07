@@ -1,4 +1,4 @@
-# Sreerag Chandran — Creative Director & Visual Artist Portfolio
+# Sreerag Chandran | Creative Director & Visual Artist Portfolio
 
 An award-winning editorial portfolio website engineered for **Sreerag Chandran**, Creative Director & Visual Artist based in Dubai.
 

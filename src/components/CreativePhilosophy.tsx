@@ -421,7 +421,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
           {/* Supporting Paragraph 3 */}
           <p className="font-sans text-xs sm:text-sm md:text-[13px] xl:text-[14px] text-white/80 leading-[1.68] font-light mt-2 sm:mt-2.5 max-w-xl">
-            My work sits at the intersection of strategy, storytelling and design — creating ideas that are not only visually distinctive, but built to connect with people.
+            My work sits at the intersection of strategy, storytelling and design, creating ideas that are not only visually distinctive, but built to connect with people.
           </p>
         </div>
 

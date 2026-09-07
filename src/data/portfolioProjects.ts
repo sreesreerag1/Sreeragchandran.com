@@ -41,7 +41,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     creativeQuote: "Designing spatial tension where physical geometry dissolves into pure digital luminescence.",
     creativeDescription: "From the monolithic triangular portal entrance to the central floating 3D vortex cube, every touchpoint was engineered to make complex algorithmic technology feel tactile, celestial, and undeniably transformative.",
     challenge: "Introducing an advanced enterprise artificial intelligence venture with immediate global gravitas, moving beyond abstract code into a commanding, physically palpable presence.",
-    idea: "Conceptualize AI not as invisible data, but as architectural luminescence—an immersive journey through spatial gateways of machine intelligence.",
+    idea: "Conceptualize AI not as invisible data, but as architectural luminescence, an immersive journey through spatial gateways of machine intelligence.",
     execution: "Designed a monolithic triangular arrival portal, floating central 3D vortex LED installation, and synchronized ambient lighting sequences that translated complex algorithmic systems into a visceral physical experience.",
     images: [
       {
