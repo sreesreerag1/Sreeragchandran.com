@@ -169,16 +169,25 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
         onClick={() => onOpenModal(project.id)}
         data-cursor="project"
         data-cursor-text="VIEW"
-        className="group/card cursor-pointer relative w-full h-[85vh] min-h-[560px] max-h-[860px] rounded-3xl md:rounded-[36px] bg-[#0B0B0B] border border-white/[0.15] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col p-5 sm:p-7 md:p-10 transition-colors hover:border-white/30"
+        className="group/card cursor-pointer relative w-full h-[85vh] min-h-[560px] max-h-[860px] rounded-3xl md:rounded-[36px] bg-[#0c0c0c]/70 backdrop-blur-2xl border border-white/[0.18] hover:border-white/[0.38] shadow-[0_30px_80px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col p-5 sm:p-7 md:p-10 transition-all duration-500"
       >
+        {/* Liquid Glass Top Edge Specular Highlight */}
+        <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-white/45 to-transparent pointer-events-none z-10" />
+
+        {/* Liquid Glass Specular Surface Reflection */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-white/[0.015] to-transparent pointer-events-none z-0 rounded-3xl md:rounded-[36px]" />
+
+        {/* Liquid Ambient Refraction Glow */}
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/[0.03] rounded-full blur-3xl pointer-events-none z-0 group-hover/card:bg-white/[0.06] transition-colors duration-700" />
+
         {/* Card Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 md:pb-7 border-b border-white/[0.15] shrink-0">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 md:pb-7 border-b border-white/[0.14] shrink-0">
           <div className="flex items-baseline gap-4 sm:gap-6">
-            <span className="font-kanit text-2xl sm:text-3xl md:text-4xl font-light text-white/[0.2]">
+            <span className="font-kanit text-2xl sm:text-3xl md:text-4xl font-light text-white/35 drop-shadow-sm">
               {project.number}
             </span>
             <div>
-              <h3 className="font-kanit font-medium text-xl sm:text-2xl md:text-3xl tracking-tight uppercase text-[#F5F5F2] group-hover/card:text-[#C8C1B5] transition-colors">
+              <h3 className="font-kanit font-medium text-xl sm:text-2xl md:text-3xl tracking-tight uppercase text-[#F5F5F2] group-hover/card:text-white transition-colors drop-shadow-sm">
                 {project.name}
               </h3>
               <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[#A6A6A6] block mt-0.5">
@@ -187,7 +196,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
             </div>
           </div>
 
-          {/* View Project Button */}
+          {/* View Project Button (Liquid Glass Pill) */}
           <button
             type="button"
             onClick={(e) => {
@@ -196,46 +205,55 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
             }}
             data-cursor="project"
             data-cursor-text="VIEW"
-            className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium tracking-[0.1em] uppercase text-[#F5F5F2] transition-all duration-300 w-fit shrink-0 backdrop-blur-md"
+            className="group/btn inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.06] hover:bg-[#F5F5F2] hover:text-[#050505] hover:border-white px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium tracking-[0.1em] uppercase text-[#F5F5F2] transition-all duration-300 w-fit shrink-0 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_8px_20px_rgba(0,0,0,0.3)]"
           >
             <span>View Project</span>
-            <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110" />
+            <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover/btn:rotate-45 group-hover/btn:scale-110" />
           </button>
         </div>
 
         {/* Card Body: Image Layout: Left 2 stacked images, Right 1 large image */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
           {/* Left: Two Stacked Images (5 cols) */}
           <div className="hidden sm:grid lg:col-span-5 grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
-            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-black/40">
+            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.18] bg-black/40 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_12px_32px_rgba(0,0,0,0.4)] group/img">
               <img
                 src={project.leftImageTop}
                 alt={`${project.name} detail 1`}
                 loading="lazy"
-                className="w-full h-full object-cover filter brightness-[0.9] group-hover/card:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover filter brightness-[0.92] group-hover/card:scale-105 transition-transform duration-700"
               />
+              {/* Liquid Glass Edge Glare */}
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
             </div>
-            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-black/40">
+            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.18] bg-black/40 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_12px_32px_rgba(0,0,0,0.4)] group/img">
               <img
                 src={project.leftImageBottom}
                 alt={`${project.name} detail 2`}
                 loading="lazy"
-                className="w-full h-full object-cover filter brightness-[0.9] group-hover/card:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover filter brightness-[0.92] group-hover/card:scale-105 transition-transform duration-700"
               />
+              {/* Liquid Glass Edge Glare */}
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
 
           {/* Right: One Large Image (7 cols) */}
-          <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-black/40">
+          <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.18] bg-black/40 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_16px_40px_rgba(0,0,0,0.5)] group/img">
             <img
               src={project.rightImageLarge}
               alt={`${project.name} hero`}
               loading="lazy"
-              className="w-full h-full object-cover filter brightness-[0.95] group-hover/card:scale-105 transition-transform duration-700"
+              className="w-full h-full object-cover filter brightness-[0.96] group-hover/card:scale-105 transition-transform duration-700"
             />
 
+            {/* Liquid Glass Top Edge Glare */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none z-10" />
+
             {/* Vignette Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
           </div>
         </div>
       </motion.div>
