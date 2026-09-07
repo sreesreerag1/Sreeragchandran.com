@@ -3,10 +3,7 @@ import { Hexagon, ArrowUpRight } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 
 const SOCIALS = [
-  { label: 'Instagram', href: '#' },
-  { label: 'LinkedIn', href: '#' },
-  { label: 'Behance', href: '#' },
-  { label: 'X', href: '#' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/sreerag-chandran-63228950/' },
 ];
 
 export const Footer: React.FC = () => {
@@ -103,6 +100,8 @@ export const Footer: React.FC = () => {
                 <li key={soc.label}>
                   <a
                     href={soc.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[#A6A6A6] hover:text-white transition-colors"
                   >
                     <span>{soc.label}</span>
