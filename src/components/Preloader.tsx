@@ -7,15 +7,21 @@ interface PreloaderProps {
 
 export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
   const [percent, setPercent] = useState(0);
-  const [phase, setPhase] = useState<'loading' | 'holding' | 'exiting' | 'finished'>('loading');
+  const [isExiting, setIsExiting] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
   const [isReducedMotion, setIsReducedMotion] = useState(false);
 
   const targetPercentRef = useRef(0);
   const currentPercentRef = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const hasExitedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
-    // Lock body scrolling during preloading
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    // Lock body scrolling during preloader
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
@@ -24,69 +30,77 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
 
     let animId: number;
 
-    // Smooth RAF lerp for visually fluid percentage increment
-    const updateLerp = () => {
+    const triggerExit = () => {
+      if (hasExitedRef.current) return;
+      hasExitedRef.current = true;
+
+      // 250ms hold at 100% / READY
+      setTimeout(() => {
+        setIsExiting(true);
+
+        // 750ms upward slide transition
+        setTimeout(() => {
+          setIsFinished(true);
+          document.body.style.overflow = '';
+          if (onCompleteRef.current) {
+            onCompleteRef.current();
+          }
+        }, 750);
+      }, 250);
+    };
+
+    // Smooth RAF ticker
+    const tick = () => {
       const target = targetPercentRef.current;
       const current = currentPercentRef.current;
 
-      // Speed factor: quicker when far behind, smooth when close
-      const diff = target - current;
-      const step = Math.max(0.4, diff * 0.12);
-
       if (current < target) {
+        const step = Math.max(0.6, (target - current) * 0.18);
         currentPercentRef.current = Math.min(target, current + step);
-        setPercent(Math.floor(currentPercentRef.current));
-      }
+        const rounded = Math.floor(currentPercentRef.current);
+        setPercent(rounded);
 
-      if (currentPercentRef.current >= 100) {
+        if (rounded >= 100) {
+          setPercent(100);
+          triggerExit();
+          return;
+        }
+      } else if (current >= 100) {
         setPercent(100);
-        return; // Lerp complete
+        triggerExit();
+        return;
       }
 
-      animId = requestAnimationFrame(updateLerp);
+      animId = requestAnimationFrame(tick);
     };
 
-    animId = requestAnimationFrame(updateLerp);
+    animId = requestAnimationFrame(tick);
 
-    // Run real asset preload manager
-    runPreloadSequence((realProgress) => {
-      targetPercentRef.current = realProgress;
+    // Run real asset preload sequence
+    runPreloadSequence((progress) => {
+      if (progress > targetPercentRef.current) {
+        targetPercentRef.current = progress;
+      }
     }).then(() => {
       targetPercentRef.current = 100;
     });
 
+    // Hard fallback safety watchdog: guarantee exit after 2.8s max
+    const safetyWatchdog = setTimeout(() => {
+      targetPercentRef.current = 100;
+      currentPercentRef.current = 100;
+      setPercent(100);
+      triggerExit();
+    }, 2800);
+
     return () => {
       cancelAnimationFrame(animId);
+      clearTimeout(safetyWatchdog);
       document.body.style.overflow = originalOverflow;
     };
   }, []);
 
-  // When percent reaches 100, trigger cinematic exit sequence
-  useEffect(() => {
-    if (percent >= 100 && phase === 'loading') {
-      setPhase('holding');
-
-      // Hold at 100% for 250ms for visual polish
-      const holdTimer = setTimeout(() => {
-        setPhase('exiting');
-
-        // Exit duration: 750ms slide upward
-        const exitTimer = setTimeout(() => {
-          setPhase('finished');
-          document.body.style.overflow = '';
-          if (onComplete) {
-            onComplete();
-          }
-        }, 750);
-
-        return () => clearTimeout(exitTimer);
-      }, 250);
-
-      return () => clearTimeout(holdTimer);
-    }
-  }, [percent, phase, onComplete]);
-
-  if (phase === 'finished') {
+  if (isFinished) {
     return null;
   }
 
@@ -94,14 +108,13 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
 
   return (
     <div
-      ref={containerRef}
       role="progressbar"
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Website preloader"
       className={`fixed inset-0 z-[99999999] bg-[#050505] text-[#F5F5F2] flex flex-col justify-between p-6 sm:p-10 md:p-16 select-none overflow-hidden will-change-transform ${
-        phase === 'exiting'
+        isExiting
           ? isReducedMotion
             ? 'opacity-0 transition-opacity duration-500 ease-out pointer-events-none'
             : '-translate-y-full transition-transform duration-750 ease-[cubic-bezier(0.76,0,0.24,1)] pointer-events-none'
@@ -111,7 +124,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       {/* Top Meta Bar */}
       <div
         className={`flex items-center justify-between font-mono text-[9px] sm:text-[10px] tracking-[0.22em] text-[#F5F5F2]/45 uppercase transition-opacity duration-300 ${
-          phase === 'exiting' ? 'opacity-0' : 'opacity-100'
+          isExiting ? 'opacity-0' : 'opacity-100'
         }`}
       >
         <span className="flex items-center gap-2">
@@ -124,9 +137,9 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       {/* Center Cinematic Title */}
       <div
         className={`flex flex-col items-center justify-center transition-all duration-500 ease-out ${
-          phase === 'exiting'
+          isExiting
             ? '-translate-y-3 opacity-0'
-            : phase === 'holding'
+            : percent >= 100
             ? '-translate-y-1 opacity-100'
             : 'translate-y-0 opacity-100'
         }`}
@@ -144,7 +157,7 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       {/* Bottom Progress Engine */}
       <div
         className={`flex flex-col gap-3 w-full max-w-md mx-auto transition-opacity duration-300 ${
-          phase === 'exiting' ? 'opacity-0' : 'opacity-100'
+          isExiting ? 'opacity-0' : 'opacity-100'
         }`}
       >
         {/* Hairline Progress Gauge */}
