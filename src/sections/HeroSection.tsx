@@ -529,6 +529,10 @@ export const HeroSection: React.FC = () => {
     };
   }, [isDark]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('hero-theme-change', { detail: { isLight: !isDark } }));
+  }, [isDark]);
+
   // Reusable frame extractor with progressive caching & fallback
   const extractFrames = async (
     videoUrl: string,
@@ -1015,6 +1019,7 @@ export const HeroSection: React.FC = () => {
               (Moves downward with user scroll and leaves the viewport at bottom)
              ===================================================================== */}
           <div
+            data-hero-light={!isDark ? 'true' : undefined}
             className={`relative h-screen h-[100dvh] w-full overflow-hidden flex flex-col justify-between pt-12 sm:pt-16 md:pt-20 pb-4 sm:pb-8 md:pb-12 md:px-14 lg:px-16 transition-colors duration-700 ${
               isDark ? 'bg-[#050505] text-white' : 'bg-[#FFFFFF] text-[#3A3A3A]'
             }`}

@@ -24,6 +24,7 @@ export const CustomCursor: React.FC = () => {
   const isPointerDownRef = useRef(false);
   const isVisibleRef = useRef(false);
   const isInitializedRef = useRef(false);
+  const isLightHeroRef = useRef(false);
 
   useEffect(() => {
     // Strictly detect touch devices and mobile screens
@@ -47,6 +48,7 @@ export const CustomCursor: React.FC = () => {
     const updateVisualStyles = () => {
       const mode = modeRef.current;
       const isVisible = isVisibleRef.current;
+      const isLightHero = isLightHeroRef.current;
 
       const ring = ringRef.current;
       const dot = dotRef.current;
@@ -60,16 +62,29 @@ export const CustomCursor: React.FC = () => {
         return;
       }
 
+      // On the light version of the hero section: change cursor color to black.
+      // Everywhere else: keep original inverted difference cursor.
+      if (isLightHero) {
+        ring.style.mixBlendMode = 'normal';
+        dot.style.mixBlendMode = 'normal';
+        dot.style.backgroundColor = '#000000';
+      } else {
+        ring.style.mixBlendMode = 'difference';
+        dot.style.mixBlendMode = 'difference';
+        dot.style.backgroundColor = '#FFFFFF';
+      }
+
       switch (mode) {
         case 'project': {
           ring.style.opacity = '1';
           ring.style.width = '92px';
           ring.style.height = '92px';
           ring.style.border = 'none';
-          ring.style.backgroundColor = '#FFFFFF';
+          ring.style.backgroundColor = isLightHero ? '#000000' : '#FFFFFF';
 
           text.style.opacity = '1';
           text.textContent = textContentRef.current || 'VIEW';
+          text.style.color = isLightHero ? '#FFFFFF' : '#000000';
 
           dot.style.opacity = '0';
           break;
@@ -79,10 +94,11 @@ export const CustomCursor: React.FC = () => {
           ring.style.width = '92px';
           ring.style.height = '92px';
           ring.style.border = 'none';
-          ring.style.backgroundColor = '#FFFFFF';
+          ring.style.backgroundColor = isLightHero ? '#000000' : '#FFFFFF';
 
           text.style.opacity = '1';
           text.textContent = textContentRef.current || 'EXPLORE';
+          text.style.color = isLightHero ? '#FFFFFF' : '#000000';
 
           dot.style.opacity = '0';
           break;
@@ -92,10 +108,11 @@ export const CustomCursor: React.FC = () => {
           ring.style.width = '48px';
           ring.style.height = '48px';
           ring.style.border = 'none';
-          ring.style.backgroundColor = '#FFFFFF';
+          ring.style.backgroundColor = isLightHero ? '#000000' : '#FFFFFF';
 
           text.style.opacity = '1';
           text.textContent = textContentRef.current || 'CLOSE';
+          text.style.color = isLightHero ? '#FFFFFF' : '#000000';
 
           dot.style.opacity = '0';
           break;
@@ -104,8 +121,12 @@ export const CustomCursor: React.FC = () => {
           ring.style.opacity = '1';
           ring.style.width = '56px';
           ring.style.height = '56px';
-          ring.style.border = '1px solid rgba(255, 255, 255, 0.9)';
-          ring.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+          ring.style.border = isLightHero
+            ? '1px solid rgba(0, 0, 0, 0.85)'
+            : '1px solid rgba(255, 255, 255, 0.9)';
+          ring.style.backgroundColor = isLightHero
+            ? 'rgba(0, 0, 0, 0.08)'
+            : 'rgba(255, 255, 255, 0.08)';
 
           text.style.opacity = '0';
           text.textContent = '';
@@ -118,7 +139,9 @@ export const CustomCursor: React.FC = () => {
           ring.style.opacity = '1';
           ring.style.width = '40px';
           ring.style.height = '40px';
-          ring.style.border = '1px solid rgba(255, 255, 255, 0.85)';
+          ring.style.border = isLightHero
+            ? '1px solid rgba(0, 0, 0, 0.8)'
+            : '1px solid rgba(255, 255, 255, 0.85)';
           ring.style.backgroundColor = 'transparent';
 
           text.style.opacity = '0';
@@ -142,6 +165,13 @@ export const CustomCursor: React.FC = () => {
         isInitializedRef.current = true;
       }
 
+      const target = e.target as HTMLElement | null;
+      const isLightHero = Boolean(target?.closest('[data-hero-light="true"]'));
+      if (isLightHero !== isLightHeroRef.current) {
+        isLightHeroRef.current = isLightHero;
+        updateVisualStyles();
+      }
+
       if (!isVisibleRef.current) {
         isVisibleRef.current = true;
         updateVisualStyles();
@@ -151,6 +181,11 @@ export const CustomCursor: React.FC = () => {
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
+
+      const isLightHero = Boolean(target.closest('[data-hero-light="true"]'));
+      if (isLightHero !== isLightHeroRef.current) {
+        isLightHeroRef.current = isLightHero;
+      }
 
       // Inputs / text editing
       if (target.closest('input, textarea, select, [contenteditable="true"]')) {
@@ -210,6 +245,8 @@ export const CustomCursor: React.FC = () => {
         modeRef.current = 'default';
         textContentRef.current = '';
         updateVisualStyles();
+      } else {
+        updateVisualStyles();
       }
     };
 
@@ -233,12 +270,32 @@ export const CustomCursor: React.FC = () => {
       updateVisualStyles();
     };
 
+    const handleScroll = () => {
+      const el = document.elementFromPoint(coords.current.mouseX, coords.current.mouseY) as HTMLElement | null;
+      const isLightHero = Boolean(el?.closest('[data-hero-light="true"]'));
+      if (isLightHero !== isLightHeroRef.current) {
+        isLightHeroRef.current = isLightHero;
+        updateVisualStyles();
+      }
+    };
+
+    const handleHeroThemeChange = () => {
+      requestAnimationFrame(() => {
+        const el = document.elementFromPoint(coords.current.mouseX, coords.current.mouseY) as HTMLElement | null;
+        const isLightHero = Boolean(el?.closest('[data-hero-light="true"]'));
+        isLightHeroRef.current = isLightHero;
+        updateVisualStyles();
+      });
+    };
+
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseover', handleMouseOver, { passive: true });
     window.addEventListener('mousedown', handleMouseDown, { passive: true });
     window.addEventListener('mouseup', handleMouseUp, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave, { passive: true });
     document.addEventListener('mouseenter', handleMouseEnter, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('hero-theme-change', handleHeroThemeChange);
 
     // Single rAF lerp render loop
     const dotLerp = prefersReducedMotion ? 1 : 0.32;
@@ -284,6 +341,8 @@ export const CustomCursor: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('mouseenter', handleMouseEnter);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('hero-theme-change', handleHeroThemeChange);
     };
   }, [isDesktop]);
 
@@ -294,7 +353,7 @@ export const CustomCursor: React.FC = () => {
       {/* Outer Ring / Interaction Badge */}
       <div
         ref={ringRef}
-        className="fixed top-0 left-0 pointer-events-none will-change-transform rounded-full flex items-center justify-center text-center transition-[width,height,background-color,border-color,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none overflow-hidden"
+        className="fixed top-0 left-0 pointer-events-none will-change-transform rounded-full flex items-center justify-center text-center transition-[width,height,background-color,border-color,opacity,color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none overflow-hidden"
         style={{
           mixBlendMode: 'difference',
           width: 40,
@@ -313,7 +372,7 @@ export const CustomCursor: React.FC = () => {
       {/* Inner Dot */}
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 pointer-events-none will-change-transform rounded-full bg-white transition-[opacity] duration-200 ease-out select-none"
+        className="fixed top-0 left-0 pointer-events-none will-change-transform rounded-full bg-white transition-[opacity,background-color] duration-200 ease-out select-none"
         style={{
           mixBlendMode: 'difference',
           width: 8,
