@@ -7,14 +7,28 @@ import ProjectsDarkSection from './sections/ProjectsDarkSection';
 import Footer from './sections/Footer';
 import CustomCursor from './components/CustomCursor';
 import Preloader from './components/Preloader';
+import { startSelectedWorkPrefetch } from './utils/imagePrefetcher';
 
 export const App: React.FC = () => {
   const [isSiteLoaded, setIsSiteLoaded] = useState(false);
 
+  React.useEffect(() => {
+    // Safety fallback: prefetch after 3 seconds regardless of preloader state
+    const timer = setTimeout(() => {
+      startSelectedWorkPrefetch();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-[#050505] text-[#F5F5F2] selection:bg-[#C8C1B5]/30 selection:text-[#F5F5F2] overflow-x-clip font-sans">
       {/* Editorial Preloader with real asset progress & cinematic upward exit */}
-      <Preloader onComplete={() => setIsSiteLoaded(true)} />
+      <Preloader
+        onComplete={() => {
+          setIsSiteLoaded(true);
+          startSelectedWorkPrefetch();
+        }}
+      />
 
       {/* Nabil Issa Inspired Custom Editorial Cursor */}
       <CustomCursor isEnabled={isSiteLoaded} />

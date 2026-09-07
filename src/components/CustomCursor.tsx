@@ -28,6 +28,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
   const isPointerDownRef = useRef(false);
   const isVisibleRef = useRef(false);
   const isInitializedRef = useRef(false);
+  const isInsideHeroRef = useRef(false);
   const isLightHeroRef = useRef(false);
   const isEnabledRef = useRef(isEnabled);
 
@@ -58,6 +59,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
     const updateVisualStyles = () => {
       const mode = modeRef.current;
       const isVisible = isVisibleRef.current;
+      const isInsideHero = isInsideHeroRef.current;
       const isLightHero = isLightHeroRef.current;
       const isEnabledActive = isEnabledRef.current;
 
@@ -67,14 +69,15 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
 
       if (!ring || !dot || !text) return;
 
-      if (!isEnabledActive || !isVisible || mode === 'text') {
+      // Strictly only display the custom cursor inside the Hero Section
+      if (!isEnabledActive || !isVisible || !isInsideHero || mode === 'text') {
         ring.style.opacity = '0';
         dot.style.opacity = '0';
         return;
       }
 
       // On the light version of the hero section: change cursor color to black.
-      // Everywhere else: keep original inverted difference cursor.
+      // In dark version of hero section: keep original inverted difference cursor.
       if (isLightHero) {
         ring.style.mixBlendMode = 'normal';
         dot.style.mixBlendMode = 'normal';
@@ -177,14 +180,25 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
       }
 
       const target = e.target as HTMLElement | null;
+      const isInsideHero = Boolean(target?.closest('[data-hero-stage="true"]'));
       const isLightHero = Boolean(target?.closest('[data-hero-light="true"]'));
+      let needsStyleUpdate = false;
+
+      if (isInsideHero !== isInsideHeroRef.current) {
+        isInsideHeroRef.current = isInsideHero;
+        needsStyleUpdate = true;
+      }
       if (isLightHero !== isLightHeroRef.current) {
         isLightHeroRef.current = isLightHero;
-        updateVisualStyles();
+        needsStyleUpdate = true;
       }
 
       if (!isVisibleRef.current) {
         isVisibleRef.current = true;
+        needsStyleUpdate = true;
+      }
+
+      if (needsStyleUpdate) {
         updateVisualStyles();
       }
     };
@@ -193,12 +207,18 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
+      const isInsideHero = Boolean(target.closest('[data-hero-stage="true"]'));
       const isLightHero = Boolean(target.closest('[data-hero-light="true"]'));
-      if (isLightHero !== isLightHeroRef.current) {
-        isLightHeroRef.current = isLightHero;
+      isInsideHeroRef.current = isInsideHero;
+      isLightHeroRef.current = isLightHero;
+
+      // If outside the hero section, hide cursor immediately and return
+      if (!isInsideHero) {
+        updateVisualStyles();
+        return;
       }
 
-      // Inputs / text editing
+      // Inputs / text editing inside hero
       if (target.closest('input, textarea, select, [contenteditable="true"]')) {
         modeRef.current = 'text';
         textContentRef.current = '';
@@ -206,43 +226,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
         return;
       }
 
-      // Close controls (Modal close button)
-      const closeEl = target.closest('[data-cursor="close"]');
-      if (closeEl) {
-        modeRef.current = 'close';
-        textContentRef.current = closeEl.getAttribute('data-cursor-text') || 'CLOSE';
-        updateVisualStyles();
-        return;
-      }
-
-      // Explore controls (Modal gallery inspection)
-      const exploreEl = target.closest('[data-cursor="explore"]');
-      if (exploreEl) {
-        modeRef.current = 'explore';
-        textContentRef.current = exploreEl.getAttribute('data-cursor-text') || 'EXPLORE';
-        updateVisualStyles();
-        return;
-      }
-
-      // Project previews (Marquee & Sticky Stacks)
-      const projectEl = target.closest('[data-cursor="project"]');
-      if (projectEl) {
-        modeRef.current = 'project';
-        textContentRef.current = projectEl.getAttribute('data-cursor-text') || 'VIEW';
-        updateVisualStyles();
-        return;
-      }
-
-      // Custom explicit cursor text attribute
-      const customTextEl = target.closest('[data-cursor-text]');
-      if (customTextEl) {
-        modeRef.current = 'project';
-        textContentRef.current = customTextEl.getAttribute('data-cursor-text') || 'VIEW';
-        updateVisualStyles();
-        return;
-      }
-
-      // Generic interactive links and buttons
+      // Generic interactive links and buttons inside hero
       const linkEl = target.closest('a, button, [role="button"], .cursor-pointer, [data-cursor="link"]');
       if (linkEl) {
         modeRef.current = 'link';
@@ -251,7 +235,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
         return;
       }
 
-      // Default state
+      // Default state inside hero
       if (modeRef.current !== 'default') {
         modeRef.current = 'default';
         textContentRef.current = '';
@@ -283,8 +267,10 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
 
     const handleScroll = () => {
       const el = document.elementFromPoint(coords.current.mouseX, coords.current.mouseY) as HTMLElement | null;
+      const isInsideHero = Boolean(el?.closest('[data-hero-stage="true"]'));
       const isLightHero = Boolean(el?.closest('[data-hero-light="true"]'));
-      if (isLightHero !== isLightHeroRef.current) {
+      if (isInsideHero !== isInsideHeroRef.current || isLightHero !== isLightHeroRef.current) {
+        isInsideHeroRef.current = isInsideHero;
         isLightHeroRef.current = isLightHero;
         updateVisualStyles();
       }
@@ -293,8 +279,8 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
     const handleHeroThemeChange = () => {
       requestAnimationFrame(() => {
         const el = document.elementFromPoint(coords.current.mouseX, coords.current.mouseY) as HTMLElement | null;
-        const isLightHero = Boolean(el?.closest('[data-hero-light="true"]'));
-        isLightHeroRef.current = isLightHero;
+        isInsideHeroRef.current = Boolean(el?.closest('[data-hero-stage="true"]'));
+        isLightHeroRef.current = Boolean(el?.closest('[data-hero-light="true"]'));
         updateVisualStyles();
       });
     };

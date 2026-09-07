@@ -1,9 +1,61 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 import { PORTFOLIO_PROJECTS, PortfolioProject } from '../data/portfolioProjects';
 import { ProjectCaseStudyModal } from '../components/ProjectCaseStudyModal';
+import { prefetchUrls, startSelectedWorkPrefetch } from '../utils/imagePrefetcher';
+
+interface OptimizedProjectImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+  priority?: boolean;
+}
+
+const OptimizedProjectImage: React.FC<OptimizedProjectImageProps> = ({
+  src,
+  alt,
+  className = '',
+  priority = false,
+}) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete) {
+      setIsLoaded(true);
+    }
+  }, [src]);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden bg-[#0a0a0a]">
+      {/* Luxury Liquid Glass Shimmer Placeholder */}
+      <div
+        className={`absolute inset-0 z-0 bg-[#0d0d0d] transition-opacity duration-700 pointer-events-none ${
+          isLoaded ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+      </div>
+
+      {/* Actual Image with smooth fade-in */}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+        fetchPriority={priority ? 'high' : 'auto'}
+        onLoad={() => setIsLoaded(true)}
+        className={`${className} transition-all duration-700 ease-out ${
+          isLoaded ? 'opacity-100 filter brightness-[0.94]' : 'opacity-0'
+        }`}
+      />
+    </div>
+  );
+};
 
 interface StickyProjectItem {
   id: string;
@@ -143,11 +195,38 @@ interface StickyCardProps {
 
 const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) => {
   const cardContainerRef = useRef<HTMLDivElement>(null);
+  const isPriority = index <= 2; // Cards 01, 02, and 03 load with highest priority
 
   const { scrollYProgress } = useScroll({
     target: cardContainerRef,
     offset: ['start end', 'start start'],
   });
+
+  // Lookahead prefetch for cards further down the stack
+  useEffect(() => {
+    if (isPriority) return;
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          prefetchUrls([
+            project.leftImageTop,
+            project.leftImageBottom,
+            project.rightImageLarge,
+          ]);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '1000px 0px' }
+    );
+
+    if (cardContainerRef.current) {
+      observer.observe(cardContainerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [project, isPriority]);
 
   // Calculate subtle scaling as cards stack across 13 items
   const scale = useTransform(
@@ -217,43 +296,43 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
           {/* Left: Two Stacked Images (5 cols) */}
           <div className="hidden sm:grid lg:col-span-5 grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
             <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.18] bg-black/40 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_12px_32px_rgba(0,0,0,0.4)] group/img">
-              <img
+              <OptimizedProjectImage
                 src={project.leftImageTop}
                 alt={`${project.name} detail 1`}
-                loading="lazy"
-                className="w-full h-full object-cover filter brightness-[0.92] group-hover/card:scale-105 transition-transform duration-700"
+                priority={isPriority}
+                className="w-full h-full object-cover group-hover/card:scale-105"
               />
               {/* Liquid Glass Edge Glare */}
-              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none z-10" />
             </div>
             <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.18] bg-black/40 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_12px_32px_rgba(0,0,0,0.4)] group/img">
-              <img
+              <OptimizedProjectImage
                 src={project.leftImageBottom}
                 alt={`${project.name} detail 2`}
-                loading="lazy"
-                className="w-full h-full object-cover filter brightness-[0.92] group-hover/card:scale-105 transition-transform duration-700"
+                priority={isPriority}
+                className="w-full h-full object-cover group-hover/card:scale-105"
               />
               {/* Liquid Glass Edge Glare */}
-              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none z-10" />
             </div>
           </div>
 
           {/* Right: One Large Image (7 cols) */}
           <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.18] bg-black/40 backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_16px_40px_rgba(0,0,0,0.5)] group/img">
-            <img
+            <OptimizedProjectImage
               src={project.rightImageLarge}
               alt={`${project.name} hero`}
-              loading="lazy"
-              className="w-full h-full object-cover filter brightness-[0.96] group-hover/card:scale-105 transition-transform duration-700"
+              priority={isPriority}
+              className="w-full h-full object-cover group-hover/card:scale-105"
             />
 
             {/* Liquid Glass Top Edge Glare */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none z-10" />
 
             {/* Vignette Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none z-10" />
           </div>
         </div>
       </motion.div>
@@ -263,6 +342,27 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
 
 export const ProjectsDarkSection: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          startSelectedWorkPrefetch();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '1200px 0px' }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleOpenModal = (projectId: string) => {
     const project = PORTFOLIO_PROJECTS.find((p) => p.slug === projectId);
@@ -273,6 +373,7 @@ export const ProjectsDarkSection: React.FC = () => {
 
   return (
     <section
+      ref={sectionRef}
       id="projects"
       className="relative z-30 w-full bg-[#050505] text-[#F5F5F2] pt-24 sm:pt-36 md:pt-48 pb-28 sm:pb-40 px-5 sm:px-8 md:px-14 lg:px-16 border-t border-white/[0.15]"
     >

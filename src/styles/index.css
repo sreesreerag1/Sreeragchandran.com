@@ -34,20 +34,17 @@
   }
 }
 
-/* Desktop Custom Cursor Integration (Nabil Issa Inspired) */
+/* Desktop Custom Cursor: Only hide default cursor inside the Hero Section */
 @media (hover: hover) and (pointer: fine) {
-  body,
-  a,
-  button,
-  [role="button"],
-  .cursor-pointer {
+  [data-hero-stage="true"],
+  [data-hero-stage="true"] * {
     cursor: none !important;
   }
 
-  input,
-  textarea,
-  select,
-  [contenteditable="true"] {
+  [data-hero-stage="true"] input,
+  [data-hero-stage="true"] textarea,
+  [data-hero-stage="true"] select,
+  [data-hero-stage="true"] [contenteditable="true"] {
     cursor: auto !important;
   }
 }
