@@ -2,7 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 
 type CursorMode = 'default' | 'link' | 'project' | 'explore' | 'close' | 'text';
 
-export const CustomCursor: React.FC = () => {
+interface CustomCursorProps {
+  isEnabled?: boolean;
+}
+
+export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) => {
   const [isDesktop, setIsDesktop] = useState(false);
 
   const dotRef = useRef<HTMLDivElement>(null);
@@ -25,6 +29,12 @@ export const CustomCursor: React.FC = () => {
   const isVisibleRef = useRef(false);
   const isInitializedRef = useRef(false);
   const isLightHeroRef = useRef(false);
+  const isEnabledRef = useRef(isEnabled);
+
+  useEffect(() => {
+    isEnabledRef.current = isEnabled;
+    window.dispatchEvent(new CustomEvent('cursor-enable-change'));
+  }, [isEnabled]);
 
   useEffect(() => {
     // Strictly detect touch devices and mobile screens
@@ -49,6 +59,7 @@ export const CustomCursor: React.FC = () => {
       const mode = modeRef.current;
       const isVisible = isVisibleRef.current;
       const isLightHero = isLightHeroRef.current;
+      const isEnabledActive = isEnabledRef.current;
 
       const ring = ringRef.current;
       const dot = dotRef.current;
@@ -56,7 +67,7 @@ export const CustomCursor: React.FC = () => {
 
       if (!ring || !dot || !text) return;
 
-      if (!isVisible || mode === 'text') {
+      if (!isEnabledActive || !isVisible || mode === 'text') {
         ring.style.opacity = '0';
         dot.style.opacity = '0';
         return;
@@ -288,6 +299,10 @@ export const CustomCursor: React.FC = () => {
       });
     };
 
+    const handleEnableChange = () => {
+      updateVisualStyles();
+    };
+
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseover', handleMouseOver, { passive: true });
     window.addEventListener('mousedown', handleMouseDown, { passive: true });
@@ -296,6 +311,7 @@ export const CustomCursor: React.FC = () => {
     document.addEventListener('mouseenter', handleMouseEnter, { passive: true });
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('hero-theme-change', handleHeroThemeChange);
+    window.addEventListener('cursor-enable-change', handleEnableChange);
 
     // Single rAF lerp render loop
     const dotLerp = prefersReducedMotion ? 1 : 0.32;
@@ -343,6 +359,7 @@ export const CustomCursor: React.FC = () => {
       document.removeEventListener('mouseenter', handleMouseEnter);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('hero-theme-change', handleHeroThemeChange);
+      window.removeEventListener('cursor-enable-change', handleEnableChange);
     };
   }, [isDesktop]);
 
