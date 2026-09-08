@@ -25,5 +25,15 @@
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
-  }
+  },
+  "browserslist": [
+    "> 0.2%",
+    "not dead",
+    "not op_mini all",
+    "Safari >= 12",
+    "iOS >= 12",
+    "Chrome >= 80",
+    "Firefox >= 78",
+    "Edge >= 80"
+  ]
 }

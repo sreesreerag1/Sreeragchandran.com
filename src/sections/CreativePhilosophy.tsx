@@ -43,6 +43,15 @@ const solveCubicBezier = (
 
 const easeCubic = solveCubicBezier(0.22, 1, 0.36, 1);
 
+// Safe fastSeek helper with fallback to currentTime for ultra-responsive video scrubbing
+const safeSeek = (v: HTMLVideoElement, time: number) => {
+  if ('fastSeek' in v && typeof (v as any).fastSeek === 'function') {
+    (v as any).fastSeek(time);
+  } else {
+    v.currentTime = time;
+  }
+};
+
 // Calculate cover framing preserving full vertical height (zero vertical crop)
 const calculateDrawBounds = (
   canvasW: number,
@@ -186,8 +195,24 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       const offscreenVideo = document.createElement('video');
       offscreenVideo.muted = true;
       offscreenVideo.playsInline = true;
+      offscreenVideo.setAttribute('playsinline', '');
+      offscreenVideo.setAttribute('webkit-playsinline', '');
+      offscreenVideo.setAttribute('muted', '');
+      offscreenVideo.setAttribute('disableremoteplayback', '');
+      offscreenVideo.setAttribute('disablepictureinpicture', '');
       offscreenVideo.preload = 'auto';
       offscreenVideo.src = VIDEO_URL;
+
+      // Attach invisible element for WebKit/iOS Safari compliance
+      offscreenVideo.style.position = 'fixed';
+      offscreenVideo.style.top = '0';
+      offscreenVideo.style.left = '0';
+      offscreenVideo.style.opacity = '0.001';
+      offscreenVideo.style.pointerEvents = 'none';
+      offscreenVideo.style.zIndex = '-9999';
+      offscreenVideo.style.width = '16px';
+      offscreenVideo.style.height = '16px';
+      document.body.appendChild(offscreenVideo);
 
       await new Promise<void>((resolve) => {
         offscreenVideo.onloadedmetadata = () => resolve();
@@ -197,7 +222,10 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         };
       });
 
-      if (!isMounted) return;
+      if (!isMounted) {
+        if (offscreenVideo.parentNode) offscreenVideo.parentNode.removeChild(offscreenVideo);
+        return;
+      }
 
       const duration = offscreenVideo.duration || 6.67;
       durationRef.current = duration;
@@ -249,6 +277,12 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         console.warn('Frame cache extraction complete with fallback', err);
       } finally {
         isExtractingRef.current = false;
+        offscreenVideo.pause();
+        offscreenVideo.removeAttribute('src');
+        offscreenVideo.load();
+        if (offscreenVideo.parentNode) {
+          offscreenVideo.parentNode.removeChild(offscreenVideo);
+        }
       }
     };
 
@@ -305,7 +339,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
             Math.min(duration - 0.05, smooth * duration)
           );
           if (Math.abs(video.currentTime - targetTime) > 0.04) {
-            video.currentTime = targetTime;
+            safeSeek(video, targetTime);
           }
         }
       }

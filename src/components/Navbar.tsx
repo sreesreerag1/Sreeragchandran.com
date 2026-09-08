@@ -20,6 +20,19 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    if (href === '#' || href === '') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const targetId = href.replace('#', '');
+    const elem = document.getElementById(targetId);
+    if (elem) {
+      elem.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500 ${
@@ -34,6 +47,7 @@ export const Navbar: React.FC = () => {
           <Magnetic strength={0.18} maxOffset={3}>
             <a
               href="#"
+              onClick={(e) => handleNavClick(e, '#')}
               className="group flex items-center text-white transition-opacity hover:opacity-80 py-1 px-2"
             >
               <span className="font-sans text-[11px] sm:text-sm font-semibold tracking-[0.14em] sm:tracking-[0.16em] text-white uppercase">
@@ -50,6 +64,7 @@ export const Navbar: React.FC = () => {
               <Magnetic strength={0.22} maxOffset={4}>
                 <a
                   href={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
                   className="font-sans text-xs uppercase tracking-[0.16em] text-white hover:text-white/80 font-medium transition-colors duration-300 py-1 px-2 block"
                 >
                   {link.label}
@@ -64,6 +79,7 @@ export const Navbar: React.FC = () => {
           <Magnetic strength={0.25} maxOffset={4}>
             <a
               href="#contact"
+              onClick={(e) => handleNavClick(e, '#contact')}
               className="group inline-flex items-center gap-1 sm:gap-1.5 rounded-full border border-white/30 bg-white/[0.04] hover:bg-white hover:text-[#050505] hover:border-white px-3.5 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-xs font-mono tracking-[0.14em] uppercase text-white transition-all duration-300 cursor-pointer shadow-sm"
             >
               <span className="sm:hidden">CONTACT →</span>

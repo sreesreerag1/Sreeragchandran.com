@@ -14,7 +14,9 @@
     background-color: #050505;
     color: #F5F5F2;
     font-family: 'Inter', system-ui, sans-serif;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   body {
@@ -23,15 +25,39 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  *, *::before, *::after {
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
     background-color: rgba(200, 193, 181, 0.3);
     color: #F5F5F2;
   }
+}
+
+/* Cross-browser hardware acceleration & subpixel anti-aliasing */
+.will-change-transform {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000px;
+  perspective: 1000px;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+.gpu-accelerated {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Desktop Custom Cursor: Only hide default cursor inside the Hero Section */

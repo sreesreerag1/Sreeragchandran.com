@@ -246,7 +246,8 @@ export const HeroSection: React.FC = () => {
 
       const scrollY = window.scrollY || window.pageYOffset;
       const trackTop = container.offsetTop;
-      rawScrollYRef.current = Math.max(0, scrollY - trackTop);
+      const trackHeight = container.offsetHeight - window.innerHeight;
+      rawScrollYRef.current = Math.max(0, Math.min(trackHeight, scrollY - trackTop));
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -444,16 +445,21 @@ export const HeroSection: React.FC = () => {
       offscreenVideo.setAttribute('playsinline', '');
       offscreenVideo.setAttribute('webkit-playsinline', '');
       offscreenVideo.setAttribute('muted', '');
+      offscreenVideo.setAttribute('disableremoteplayback', '');
+      offscreenVideo.setAttribute('disablepictureinpicture', '');
       offscreenVideo.preload = 'auto';
       offscreenVideo.src = videoUrl;
 
-      // In iOS Safari, videos must be attached to the DOM to decode reliably
+      // In iOS Safari / WebKit, elements with opacity:0 or 1px x 1px get power-throttled by the OS.
+      // An invisible 16px element with 0.001 opacity guarantees full hardware decoder speed without visual bleed.
       offscreenVideo.style.position = 'fixed';
-      offscreenVideo.style.opacity = '0';
+      offscreenVideo.style.top = '0';
+      offscreenVideo.style.left = '0';
+      offscreenVideo.style.opacity = '0.001';
       offscreenVideo.style.pointerEvents = 'none';
-      offscreenVideo.style.zIndex = '-999';
-      offscreenVideo.style.width = '1px';
-      offscreenVideo.style.height = '1px';
+      offscreenVideo.style.zIndex = '-9999';
+      offscreenVideo.style.width = '16px';
+      offscreenVideo.style.height = '16px';
       document.body.appendChild(offscreenVideo);
       offscreenVideo.load();
 
@@ -471,8 +477,10 @@ export const HeroSection: React.FC = () => {
 
       const vWidth = offscreenVideo.videoWidth || 1920;
       const vHeight = offscreenVideo.videoHeight || 1080;
-      // High-precision scale down to max 1280px width: preserves 100% sharp detail while slashing memory by 60%
-      const scale = Math.min(1, 1280 / vWidth);
+      const isMobile = isMobileDevice();
+      // On mobile devices, 720px width slashes memory by 70% while keeping retina sharpness.
+      const maxW = isMobile ? 720 : 1280;
+      const scale = Math.min(1, maxW / vWidth);
       const targetWidth = Math.round(vWidth * scale);
       const targetHeight = Math.round(vHeight * scale);
 
@@ -482,7 +490,7 @@ export const HeroSection: React.FC = () => {
       const ctx = extractCanvas.getContext('2d');
       if (ctx) {
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
       }
 
       const extracted: CanvasImageSource[] = [];
@@ -537,20 +545,23 @@ export const HeroSection: React.FC = () => {
         }
       }
 
-      // Cleanup DOM video element
+      // Cleanup DOM video element & explicitly release OS decoder handles
+      offscreenVideo.pause();
+      offscreenVideo.removeAttribute('src');
+      offscreenVideo.load();
       if (offscreenVideo.parentNode) {
         offscreenVideo.parentNode.removeChild(offscreenVideo);
       }
 
-    // Complete sequence assignment
-    if (isMounted() && extracted.length >= Math.floor(targetFrames * 0.7)) {
-      targetRef.current = extracted;
-      setReady(true);
+      // Complete sequence assignment
+      if (isMounted() && extracted.length >= Math.floor(targetFrames * 0.7)) {
+        targetRef.current = extracted;
+        setReady(true);
+      }
+    } catch (err) {
+      console.warn('Frame cache extraction fallback to video scrub:', videoUrl, err);
     }
-  } catch (err) {
-    console.warn('Frame cache extraction fallback to video scrub:', videoUrl, err);
-  }
-};
+  };
 
   // Preload and cache frames with prioritized Hero Video extraction
   useEffect(() => {
