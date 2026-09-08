@@ -78,21 +78,6 @@ video, canvas {
   }
 }
 
-/* Desktop Custom Cursor: Only hide default cursor inside the Hero Section */
-@media (hover: hover) and (pointer: fine) {
-  [data-hero-stage="true"],
-  [data-hero-stage="true"] * {
-    cursor: none !important;
-  }
-
-  [data-hero-stage="true"] input,
-  [data-hero-stage="true"] textarea,
-  [data-hero-stage="true"] select,
-  [data-hero-stage="true"] [contenteditable="true"] {
-    cursor: auto !important;
-  }
-}
-
 .font-kanit {
   font-family: 'Kanit', sans-serif;
 }

@@ -181,23 +181,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
   const introTargetProgressRef = useRef(0.5);
   const introSmoothedProgressRef = useRef(0.5);
 
-  // iOS Safari Motion & Gyro Permission state (Mobile only)
-  const [isMotionPermNeeded, setIsMotionPermNeeded] = useState(false);
-  const [isMotionActive, setIsMotionActive] = useState(false);
-  const isMotionActiveRef = useRef(false);
-  const smoothedRollRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    // Only check or request motion permissions on real mobile devices
-    if (
-      isMobileDevice() &&
-      typeof window !== 'undefined' &&
-      typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof (DeviceOrientationEvent as any).requestPermission === 'function'
-    ) {
-      setIsMotionPermNeeded(true);
-    }
-  }, []);
+  // Track if user has scrolled down past zero (for mobile reverse scroll return)
+  const hasScrolledDownRef = useRef(false);
 
   // Direct DOM refs for buttery-smooth hardware-accelerated animations (zero React re-renders)
   const pushContainerRef = useRef<HTMLDivElement>(null);
@@ -306,6 +291,52 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
   }, []);
 
 
+  // Mobile first-touch / interaction trigger:
+  // 1. Detects first user interaction on page (touch/scroll)
+  // 2. Pauses Video 01 at current frame
+  // 3. Moves Video 01 rapidly back to frame 0
+  // 4. When Video 01 reaches frame 0: immediately activates Video 02 controlled by page scroll
+  const triggerMobileHandoff = useCallback(() => {
+    if (!isMobileDevice()) return;
+    if (heroStateRef.current !== 'HOVER_ACTIVE') return;
+
+    const v = isDark ? introVideoDarkRef.current : introVideoLightRef.current;
+    const dur = (v && v.duration && isFinite(v.duration) && v.duration > 0)
+      ? v.duration
+      : (isDark ? darkIntroDurationRef.current : lightIntroDurationRef.current) || 10;
+    const currentSec = v ? v.currentTime : 0;
+    const currentProg = Math.max(0, Math.min(1, currentSec / dur));
+
+    if (v && !v.paused) {
+      v.pause();
+    }
+
+    // Capture current frame onto canvas for a 100% seamless transition with zero flash
+    const canvas = isDark ? introCanvasDarkRef.current : introCanvasLightRef.current;
+    const frames = isDark ? darkIntroFramesRef.current : lightIntroFramesRef.current;
+    if (canvas) {
+      if (frames.length > 0) {
+        const idx = Math.min(frames.length - 1, Math.max(0, Math.round(currentProg * (frames.length - 1))));
+        drawFrameToCanvas(canvas, frames[idx], isDark);
+        if (isDark) lastDrawnDarkIntroFrameRef.current = idx;
+        else lastDrawnLightIntroFrameRef.current = idx;
+      } else if (v) {
+        drawFrameToCanvas(canvas, v, isDark);
+      }
+      canvas.style.opacity = '1';
+    }
+    if (v) {
+      v.style.opacity = '0';
+    }
+
+    heroStateRef.current = 'TRANSITIONING';
+    transitionDirectionRef.current = 'TO_SCROLL';
+    rewindStartProgressRef.current = currentProg;
+    introSmoothedProgressRef.current = currentProg;
+    rewindStartTimeRef.current = performance.now();
+    rewindDurationRef.current = Math.round(100 + currentProg * 100);
+  }, [isDark]);
+
   // Lean passive scroll and resize listener strictly recording scroll and viewport changes
   useEffect(() => {
     const handleScroll = () => {
@@ -317,6 +348,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       const trackTop = container.offsetTop;
       const trackHeight = container.offsetHeight - window.innerHeight;
       rawScrollYRef.current = Math.max(0, Math.min(trackHeight, scrollY - trackTop));
+
+      if (isMobileDevice() && rawScrollYRef.current > 0 && heroStateRef.current === 'HOVER_ACTIVE') {
+        triggerMobileHandoff();
+      }
     };
 
     // Tab visibility recovery: restore canvas frames and re-check dimensions when user returns
@@ -352,104 +387,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (ro) ro.disconnect();
     };
-  }, []);
+  }, [triggerMobileHandoff]);
 
-  // =========================================================================
-  // Mobile Motion Controller: Strictly Left-to-Right Tilt Only
-  // Mathematically isolates the horizontal roll axis using:
-  //   roll = atan2(sin(gamma), cos(gamma) * sin(beta))
-  // This completely decouples horizontal tilt from front-to-back pitch:
-  // Tilting the phone forward/backward produces ZERO movement on the creature.
-  // =========================================================================
-  const handleOrientation = useCallback((e: DeviceOrientationEvent) => {
-    if (!isSiteLoadedRef.current) return;
-    if (!isMobileDevice()) return;
-    if (e.gamma === null || typeof e.gamma !== 'number') return;
-
-    if (!isMotionActiveRef.current) {
-      isMotionActiveRef.current = true;
-      setIsMotionActive(true);
-      setIsMotionPermNeeded(false);
-    }
-
-    let gamma = e.gamma;
-    // Protect against 180° Euler angle inversion when leaning forward past vertical
-    if (gamma > 90) gamma = 180 - gamma;
-    else if (gamma < -90) gamma = -180 - gamma;
-
-    // Extract roll angle in screen plane, decoupled from pitch (beta)
-    const beta = e.beta !== null && typeof e.beta === 'number' ? e.beta : 70;
-    const bRad = (beta * Math.PI) / 180;
-    const gRad = (gamma * Math.PI) / 180;
-    const sinB = Math.max(0.15, Math.sin(bRad));
-    const rollRad = Math.atan2(Math.sin(gRad), Math.cos(gRad) * sinB);
-    const rollDeg = (rollRad * 180) / Math.PI;
-
-    // Initialize smoothing on first event to eliminate ramp-up lag
-    if (smoothedRollRef.current === null) {
-      smoothedRollRef.current = rollDeg;
-    } else {
-      // Exponential low-pass filter (0.22) eliminates hand tremors & sensor noise
-      // while keeping creature head tracking fluid and responsive
-      smoothedRollRef.current += (rollDeg - smoothedRollRef.current) * 0.22;
-    }
-
-    // Natural ergonomic tilt range: ±22° wrist tilt
-    const maxRoll = 22.0;
-    const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, smoothedRollRef.current));
-
-    // Map strictly left-to-right:
-    // Tilting phone left  (rollDeg < 0) -> 1.0 (creature looks left)
-    // Upright             (rollDeg = 0) -> 0.5 (creature looks center)
-    // Tilting phone right (rollDeg > 0) -> creature looks right
-    const tiltNorm = 0.5 + clampedRoll / (maxRoll * 2.0);
-    const clampedTilt = Math.max(0.001, Math.min(0.999, tiltNorm));
-    latestMouseProgressRef.current = clampedTilt;
-    if (heroStateRef.current === 'HOVER_ACTIVE') {
-      introTargetProgressRef.current = clampedTilt;
-    }
-  }, []);
-
-  // Request motion permission on iOS 13+ on user interaction
-  const requestMotionPermission = useCallback(async () => {
-    // Prime the video decoder synchronously inside user-gesture context
-    if (introVideoDarkRef.current) {
-      introVideoDarkRef.current.muted = true;
-      const p = introVideoDarkRef.current.play();
-      if (p !== undefined) {
-        p.then(() => {
-          introVideoDarkRef.current?.pause();
-        }).catch(() => {});
+  // Mobile initial state: continuously loop Video 01 normally until first user interaction
+  useEffect(() => {
+    if (!isSiteLoaded) return;
+    if (isMobileDevice()) {
+      const activeVid = isDark ? introVideoDarkRef.current : introVideoLightRef.current;
+      const inactiveVid = isDark ? introVideoLightRef.current : introVideoDarkRef.current;
+      if (inactiveVid && !inactiveVid.paused) {
+        inactiveVid.pause();
+      }
+      if (heroStateRef.current === 'HOVER_ACTIVE' && activeVid) {
+        activeVid.muted = true;
+        activeVid.defaultMuted = true;
+        activeVid.loop = true;
+        activeVid.style.opacity = '1';
+        const activeCanvas = isDark ? introCanvasDarkRef.current : introCanvasLightRef.current;
+        if (activeCanvas) activeCanvas.style.opacity = '0';
+        activeVid.play().catch(() => {});
       }
     }
+  }, [isSiteLoaded, isDark]);
 
-    if (
-      typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof (DeviceOrientationEvent as any).requestPermission === 'function'
-    ) {
-      try {
-        const perm = await (DeviceOrientationEvent as any).requestPermission();
-        if (perm === 'granted') {
-          setIsMotionPermNeeded(false);
-          window.addEventListener('deviceorientation', handleOrientation, { passive: true });
-        } else {
-          setIsMotionPermNeeded(false);
-        }
-      } catch (err) {
-        console.warn('Motion permission request error:', err);
-        setIsMotionPermNeeded(false);
-      }
-    } else {
-      setIsMotionPermNeeded(false);
-      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
-    }
-  }, [handleOrientation]);
-
-  // Intro video controller: Mouse hover on Desktop, Device Motion (Gyroscope Tilt) on Mobile
+  // Desktop Hover Scrub & Mobile First Touch Handlers
   useEffect(() => {
     // Desktop mouse hover controller: mouseX / window.innerWidth (0 = first frame, 1 = last frame)
+    // Moving RIGHT moves forward through frames; moving LEFT moves backward through frames.
     const handleMouseMove = (e: MouseEvent) => {
       if (!isSiteLoadedRef.current) return;
+      if (isMobileDevice()) return; // strictly desktop only
       const norm = Math.max(0, Math.min(1, e.clientX / window.innerWidth));
       latestMouseProgressRef.current = norm;
       if (heroStateRef.current === 'HOVER_ACTIVE') {
@@ -457,43 +424,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       }
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
+    // Mobile First Touch: touchstart / touchmove / pointerdown on page triggers pause & rapid rewind to frame 0
+    const handleTouchInteraction = () => {
       if (!isSiteLoadedRef.current) return;
-      // If motion is actively streaming real tilt data, do not let touch drag conflict
-      if (isMotionActiveRef.current) return;
-      if (e.touches && e.touches.length > 0) {
-        const norm = Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
-        latestMouseProgressRef.current = norm;
-        if (heroStateRef.current === 'HOVER_ACTIVE') {
-          introTargetProgressRef.current = norm;
-        }
-      }
+      if (!isMobileDevice()) return;
+      triggerMobileHandoff();
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-
-    // Standard mobile browsers (Android Chrome, etc.): listen directly on mount
-    if (
-      isMobileDevice() &&
-      (typeof DeviceOrientationEvent === 'undefined' ||
-        typeof (DeviceOrientationEvent as any).requestPermission !== 'function')
-    ) {
-      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
-    }
-
-    // iOS WebKit mobile: listen on touchend on mobile devices only
-    if (isMobileDevice()) {
-      window.addEventListener('touchend', requestMotionPermission, { passive: true });
-    }
+    window.addEventListener('touchstart', handleTouchInteraction, { passive: true });
+    window.addEventListener('touchmove', handleTouchInteraction, { passive: true });
+    window.addEventListener('pointerdown', handleTouchInteraction, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('touchend', requestMotionPermission);
+      window.removeEventListener('touchstart', handleTouchInteraction);
+      window.removeEventListener('touchmove', handleTouchInteraction);
+      window.removeEventListener('pointerdown', handleTouchInteraction);
     };
-  }, [handleOrientation, requestMotionPermission]);
+  }, [triggerMobileHandoff]);
 
   // Media unlock & decoder priming for iOS Safari, WebKit, Gecko, and Blink
   useEffect(() => {
@@ -827,25 +776,31 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
 
       if (heroStateRef.current === 'HOVER_ACTIVE') {
         if (rawScroll > 4) {
-          // Scroll begins:
-          // 1. Detect the current frame position of VIDEO 01
-          // 2. Freeze the current hover-controlled frame
-          // 3. Move VIDEO 01 rapidly back to frame 0 (disable hover, keep visible, don't switch yet)
-          heroStateRef.current = 'TRANSITIONING';
-          transitionDirectionRef.current = 'TO_SCROLL';
-          rewindStartProgressRef.current = introSmoothedProgressRef.current;
-          rewindStartTimeRef.current = now;
-          const dist = Math.abs(rewindStartProgressRef.current);
-          rewindDurationRef.current = Math.round(140 + Math.max(0.1, dist) * 110);
+          if (isMobileDevice()) {
+            triggerMobileHandoff();
+          } else {
+            // Scroll begins on desktop:
+            // 1. Detect current frame position of VIDEO 01
+            // 2. Move VIDEO 01 rapidly back to frame 0
+            heroStateRef.current = 'TRANSITIONING';
+            transitionDirectionRef.current = 'TO_SCROLL';
+            rewindStartProgressRef.current = introSmoothedProgressRef.current;
+            rewindStartTimeRef.current = now;
+            const dist = Math.abs(rewindStartProgressRef.current);
+            rewindDurationRef.current = Math.round(140 + Math.max(0.1, dist) * 110);
+          }
         } else {
-          // Locked at top: only mouse movement controls VIDEO 01
+          // Locked at top:
           smoothedScrollYRef.current = 0;
-          const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
-          const absDiff = Math.abs(diff);
-          const lerpFactor = 0.22 + 0.14 * Math.min(1.0, absDiff / 0.3);
-          introSmoothedProgressRef.current += diff * lerpFactor;
-          if (absDiff < 0.0002) {
-            introSmoothedProgressRef.current = introTargetProgressRef.current;
+          if (!isMobileDevice()) {
+            // Only mouse movement controls VIDEO 01 on desktop
+            const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
+            const absDiff = Math.abs(diff);
+            const lerpFactor = 0.22 + 0.14 * Math.min(1.0, absDiff / 0.3);
+            introSmoothedProgressRef.current += diff * lerpFactor;
+            if (absDiff < 0.0002) {
+              introSmoothedProgressRef.current = introTargetProgressRef.current;
+            }
           }
         }
       } else if (heroStateRef.current === 'TRANSITIONING') {
@@ -861,8 +816,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
 
           introSmoothedProgressRef.current = rewindStartProgressRef.current * (1 - eased);
 
-          // Reversal interrupt: If user cancelled scroll and returned to absolute top before reaching frame 0:
-          if (rawScroll <= 0 && progress < 1.0) {
+          // Reversal interrupt: If desktop user cancelled scroll and returned to absolute top before reaching frame 0:
+          if (!isMobileDevice() && rawScroll <= 0 && progress < 1.0) {
             transitionDirectionRef.current = 'TO_HOVER';
             returnStartTimeRef.current = now;
             returnTargetProgressRef.current = latestMouseProgressRef.current;
@@ -936,9 +891,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
           smoothedScrollYRef.current = targetScroll;
         }
 
+        if (targetScroll > 15) {
+          hasScrolledDownRef.current = true;
+        }
+
         // REVERSE SCROLL: When scrolling back upward and VIDEO 02 reaches the beginning frame (scroll reaches 0):
-        if (rawScroll <= 0 && smoothedScrollYRef.current <= 2) {
+        if (rawScroll <= 0 && smoothedScrollYRef.current <= 2 && (!isMobileDevice() || hasScrolledDownRef.current)) {
           smoothedScrollYRef.current = 0;
+          hasScrolledDownRef.current = false;
 
           // Synchronize: both videos at matching frame (0.02s)
           if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0.02);
@@ -964,13 +924,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
             introContainerRef.current.style.visibility = 'visible';
           }
 
-          // State becomes TRANSITIONING towards HOVER_ACTIVE
-          heroStateRef.current = 'TRANSITIONING';
-          transitionDirectionRef.current = 'TO_HOVER';
-          returnStartTimeRef.current = now;
-          returnTargetProgressRef.current = latestMouseProgressRef.current;
-          const returnDist = Math.abs(returnTargetProgressRef.current);
-          returnDurationRef.current = Math.round(140 + Math.max(0.1, returnDist) * 110);
+          if (isMobileDevice()) {
+            // On mobile: switch back to Video 01 and continue playing naturally (looping)
+            const v = isDark ? introVideoDarkRef.current : introVideoLightRef.current;
+            const c = isDark ? introCanvasDarkRef.current : introCanvasLightRef.current;
+            if (v) {
+              v.currentTime = 0.01;
+              v.style.opacity = '1';
+              v.play().catch(() => {});
+            }
+            if (c) {
+              c.style.opacity = '0';
+            }
+            heroStateRef.current = 'HOVER_ACTIVE';
+          } else {
+            // On desktop: state becomes TRANSITIONING towards HOVER_ACTIVE
+            heroStateRef.current = 'TRANSITIONING';
+            transitionDirectionRef.current = 'TO_HOVER';
+            returnStartTimeRef.current = now;
+            returnTargetProgressRef.current = latestMouseProgressRef.current;
+            const returnDist = Math.abs(returnTargetProgressRef.current);
+            returnDurationRef.current = Math.round(140 + Math.max(0.1, returnDist) * 110);
+          }
         }
       }
 
@@ -1441,7 +1416,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                     {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
                     preload="auto"
                     autoPlay={false}
-                    loop={false}
+                    loop={true}
                     controls={false}
                     disablePictureInPicture
                     disableRemotePlayback
@@ -1469,7 +1444,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                     }}
                     onSeeked={handleDarkIntroSeeked}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
-                      isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
+                      !isMobileDevice() && isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
                   >
@@ -1477,7 +1452,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   </video>
                   <canvas
                     ref={introCanvasDarkRef}
-                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
+                    className={`absolute inset-0 w-full h-full pointer-events-none ${
+                      isMobileDevice() ? 'opacity-0' : 'opacity-100'
+                    }`}
                   />
                 </div>
 
@@ -1494,7 +1471,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                     {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
                     preload="auto"
                     autoPlay={false}
-                    loop={false}
+                    loop={true}
                     controls={false}
                     disablePictureInPicture
                     disableRemotePlayback
@@ -1506,7 +1483,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                     }}
                     onSeeked={handleLightIntroSeeked}
                     className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
-                      isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
+                      !isMobileDevice() && isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
                   >
@@ -1514,7 +1491,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   </video>
                   <canvas
                     ref={introCanvasLightRef}
-                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
+                    className={`absolute inset-0 w-full h-full pointer-events-none ${
+                      isMobileDevice() ? 'opacity-0' : 'opacity-100'
+                    }`}
                   />
                 </div>
               </div>
@@ -1778,7 +1757,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
               </div>
             </div>
 
-            {/* Interactive Prompt: Mobile shows tilt/motion prompt; Desktop strictly shows clean hover cue */}
+            {/* Interactive Prompt: Mobile shows scroll cue; Desktop strictly shows clean hover cue */}
             <div
               ref={topPromptRef}
               className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-opacity duration-300 pointer-events-auto ${
@@ -1788,29 +1767,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
               }`}
               style={{ opacity: 1 }}
             >
-              {/* Mobile Only: Motion Tilt Permission Button / Swipe Prompt */}
-              <div className="md:hidden">
-                {isMotionPermNeeded ? (
-                  <button
-                    type="button"
-                    onClick={requestMotionPermission}
-                    className="flex items-center gap-2 cursor-pointer font-bold tracking-[0.24em] text-white hover:text-[#C8C1B5] transition-colors"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span>TAP TO ACTIVATE MOTION TILT ✦</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2.5 pointer-events-none">
-                    <span
-                      className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
-                        isDark ? 'bg-white' : 'bg-[#555555]'
-                      }`}
-                    />
-                    <span className={isDark ? 'text-white' : ''}>
-                      {isMotionActive ? 'TILT DEVICE ↔ EXPLORE' : 'SWIPE OR TILT ↔ EXPLORE'}
-                    </span>
-                  </div>
-                )}
+              {/* Mobile Only: Clean Scroll Prompt (Zero Motion/Gyro/Permissions) */}
+              <div className="md:hidden flex items-center gap-2 pointer-events-none">
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
+                    isDark ? 'bg-white' : 'bg-[#555555]'
+                  }`}
+                />
+                <span className={isDark ? 'text-white' : ''}>SCROLL TO EXPLORE ↓</span>
               </div>
 
               {/* Desktop Only: Clean Subdued Hover Indicator (Zero Motion Controls) */}
