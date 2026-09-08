@@ -848,8 +848,8 @@ export const HeroSection: React.FC = () => {
         const targetScroll = rawScrollYRef.current;
         const scrollDelta = targetScroll - smoothedScrollYRef.current;
         const absDelta = Math.abs(scrollDelta);
-        // Continuous velocity-adaptive damping: smooth micro-scrolls and responsive fast scrubs
-        const lerpFactor = 0.16 + 0.12 * Math.min(1.0, absDelta / 250);
+        // Continuous velocity-adaptive damping: smooth micro-scrolls and immediate responsive fast scrubs
+        const lerpFactor = 0.24 + 0.16 * Math.min(1.0, absDelta / 200);
         smoothedScrollYRef.current += scrollDelta * lerpFactor;
         if (absDelta < 0.05) {
           smoothedScrollYRef.current = targetScroll;
@@ -947,9 +947,9 @@ export const HeroSection: React.FC = () => {
         topPromptRef.current.style.pointerEvents = showTop ? 'auto' : 'none';
       }
 
-      // Status cue visibility (freeze stage 1550px -> 1800px)
+      // Status cue visibility (freeze stage 900px -> 1100px)
       if (statusCueRef.current) {
-        const showCue = s >= 1550 && s < 1800;
+        const showCue = s >= 900 && s < 1100;
         statusCueRef.current.style.opacity = showCue ? '1' : '0';
       }
 
@@ -1016,10 +1016,10 @@ export const HeroSection: React.FC = () => {
       }
 
       // =======================================================================
-      // VIDEO 2 (HERO VIDEO) SCROLL SCRUBBING (0px -> 1550px)
-      // Synchronized with exact smoothed scroll progress
+      // VIDEO 2 (HERO VIDEO) SCROLL SCRUBBING (0px -> 900px)
+      // Faster, high-responsiveness scrubbing synchronized with scroll progress
       // =======================================================================
-      const heroProgress = heroStateRef.current === 'SCROLL_VIDEO_ACTIVE' ? Math.min(1.0, s / 1550) : 0;
+      const heroProgress = heroStateRef.current === 'SCROLL_VIDEO_ACTIVE' ? Math.min(1.0, Math.max(0, s / 900)) : 0;
 
       // Dark Hero Video / Canvas:
       if (heroCanvasDarkRef.current && darkHeroFramesRef.current.length > 0) {
@@ -1076,25 +1076,25 @@ export const HeroSection: React.FC = () => {
       }
 
       // =======================================================================
-      // TYPOGRAPHY EVOLUTION (SYNCHRONIZED IN EXACT SAME FRAME AS VIDEO)
+      // TYPOGRAPHY EVOLUTION (PROPORTIONALLY SCALED TO 900px SCRUB)
       // =======================================================================
-      // Headline 1: moves upward (0px -> -22px) and fades out (1.0 -> 0.0) between 300px and 850px
-      const f1 = smoothstep(300, 850, s);
+      // Headline 1: moves upward (0px -> -22px) and fades out (1.0 -> 0.0) between 160px and 480px
+      const f1 = smoothstep(160, 480, s);
       const h1Y = -f1 * 22;
       const h1Op = 1 - f1;
 
-      // Headline 2: rises from below (+35px -> 0px) and fades in (0.0 -> 1.0) between 600px and 1150px
-      const f2 = smoothstep(600, 1150, s);
+      // Headline 2: rises from below (+35px -> 0px) and fades in (0.0 -> 1.0) between 360px and 720px
+      const f2 = smoothstep(360, 720, s);
       const h2Y = (1 - f2) * 35;
       const h2Op = f2;
 
-      // Supporting text: emerges gently (15px -> 0px, 0.0 -> 1.0) between 900px and 1250px
-      const fSup = smoothstep(900, 1250, s);
+      // Supporting text: emerges gently (15px -> 0px, 0.0 -> 1.0) between 520px and 800px
+      const fSup = smoothstep(520, 800, s);
       const supY = (1 - fSup) * 15;
       const supOp = fSup;
 
-      // Right column subtle parallax lift (0px -> -20px) between 0px and 1550px
-      const rightProgress = Math.min(1.0, s / 1550);
+      // Right column subtle parallax lift (0px -> -20px) between 0px and 900px
+      const rightProgress = Math.min(1.0, Math.max(0, s / 900));
       const rightY = -rightProgress * 20;
 
       if (headline1Ref.current) {
@@ -1116,10 +1116,10 @@ export const HeroSection: React.FC = () => {
       }
 
       // =======================================================================
-      // DOWNWARD PUSH TRANSITION (1800px -> 2600px)
+      // DOWNWARD PUSH TRANSITION (1100px -> 1750px)
       // =======================================================================
-      const pushStart = 1800;
-      const pushEnd = 2600;
+      const pushStart = 1100;
+      const pushEnd = 1750;
       let push = 0;
       if (s > pushStart) {
         push = Math.min(1.0, (s - pushStart) / (pushEnd - pushStart));
@@ -1148,7 +1148,7 @@ export const HeroSection: React.FC = () => {
     <div
       ref={containerRef}
       className="relative w-full"
-      style={{ height: 'calc(100vh + 4800px)' }}
+      style={{ height: 'calc(100vh + 3200px)' }}
     >
       {/* Sticky Viewport Stage: Pinned at top: 0 during Phase 1, 2, and 3 */}
       <div
