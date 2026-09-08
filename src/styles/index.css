@@ -60,6 +60,24 @@
   backface-visibility: hidden;
 }
 
+/* Eliminate video decoding flash, texture tearing, or stutter on WebKit, Blink, and Gecko */
+video, canvas {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* WebKit-specific backdrop-filter fallbacks for Safari macOS & iOS */
+@supports (-webkit-backdrop-filter: none) {
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(24px);
+  }
+}
+
 /* Desktop Custom Cursor: Only hide default cursor inside the Hero Section */
 @media (hover: hover) and (pointer: fine) {
   [data-hero-stage="true"],

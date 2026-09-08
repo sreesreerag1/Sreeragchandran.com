@@ -313,14 +313,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       const container = containerRef.current;
       if (!container) return;
 
-      const scrollY = window.scrollY || window.pageYOffset;
+      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
       const trackTop = container.offsetTop;
       const trackHeight = container.offsetHeight - window.innerHeight;
       rawScrollYRef.current = Math.max(0, Math.min(trackHeight, scrollY - trackTop));
     };
 
+    // Tab visibility recovery: restore canvas frames and re-check dimensions when user returns
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        lastDrawnDarkHeroFrameRef.current = -1;
+        lastDrawnLightHeroFrameRef.current = -1;
+        lastDrawnDarkIntroFrameRef.current = -1;
+        lastDrawnLightIntroFrameRef.current = -1;
+        handleResize();
+        handleScroll();
+      }
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     handleResize();
     handleScroll();
 
@@ -336,6 +349,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (ro) ro.disconnect();
     };
   }, []);
@@ -481,7 +495,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     };
   }, [handleOrientation, requestMotionPermission]);
 
-  // Media unlock & decoder priming for iOS Safari & Android mobile decoders
+  // Media unlock & decoder priming for iOS Safari, WebKit, Gecko, and Blink
   useEffect(() => {
     const unlockVideos = () => {
       const videos = [
@@ -493,6 +507,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       videos.forEach((vid) => {
         if (!vid) return;
         vid.muted = true;
+        vid.defaultMuted = true;
+        vid.setAttribute('playsinline', '');
+        vid.setAttribute('webkit-playsinline', '');
+        vid.setAttribute('x5-playsinline', '');
+        vid.setAttribute('muted', '');
         const p = vid.play();
         if (p !== undefined) {
           p.then(() => {
@@ -504,12 +523,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
 
     unlockVideos();
 
-    window.addEventListener('touchstart', unlockVideos, { once: true, passive: true });
-    window.addEventListener('click', unlockVideos, { once: true, passive: true });
+    const unlockEvents: Array<keyof WindowEventMap> = [
+      'touchstart',
+      'pointerdown',
+      'click',
+      'wheel',
+      'scroll',
+      'keydown',
+    ];
+    unlockEvents.forEach((evt) => {
+      window.addEventListener(evt, unlockVideos, { once: true, passive: true });
+    });
 
     return () => {
-      window.removeEventListener('touchstart', unlockVideos);
-      window.removeEventListener('click', unlockVideos);
+      unlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, unlockVideos);
+      });
     };
   }, [isDark]);
 
@@ -530,9 +559,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     try {
       const offscreenVideo = document.createElement('video');
       offscreenVideo.muted = true;
+      offscreenVideo.defaultMuted = true;
       offscreenVideo.playsInline = true;
       offscreenVideo.setAttribute('playsinline', '');
       offscreenVideo.setAttribute('webkit-playsinline', '');
+      offscreenVideo.setAttribute('x5-playsinline', '');
       offscreenVideo.setAttribute('muted', '');
       offscreenVideo.setAttribute('disableremoteplayback', '');
       offscreenVideo.setAttribute('disablepictureinpicture', '');
@@ -589,7 +620,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       const extractCanvas = document.createElement('canvas');
       extractCanvas.width = targetWidth;
       extractCanvas.height = targetHeight;
-      const ctx = extractCanvas.getContext('2d');
+      const ctx = extractCanvas.getContext('2d', { willReadFrequently: true });
       if (ctx) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
@@ -606,19 +637,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
         const targetTime = safeStart + (i / Math.max(1, targetFrames - 1)) * (safeEnd - safeStart);
         await new Promise<void>((resolve) => {
           let done = false;
+          let tid: any = null;
           const finish = () => {
             if (done) return;
             done = true;
-            offscreenVideo.removeEventListener('seeked', finish);
             clearTimeout(tid);
-            resolve();
+            // In Gecko / WebKit, requestAnimationFrame gives the compositor time to commit the decoded frame
+            requestAnimationFrame(() => {
+              resolve();
+            });
           };
-          // 800ms safety timeout (never prematurely abort a seek)
-          const tid = setTimeout(finish, 800);
-          if ('requestVideoFrameCallback' in offscreenVideo) {
-            (offscreenVideo as any).requestVideoFrameCallback(finish);
-          }
-          offscreenVideo.addEventListener('seeked', finish, { once: true });
+          const onSeeked = () => {
+            offscreenVideo.removeEventListener('seeked', onSeeked);
+            if ('requestVideoFrameCallback' in offscreenVideo) {
+              (offscreenVideo as any).requestVideoFrameCallback(finish);
+            } else {
+              finish();
+            }
+          };
+          tid = setTimeout(() => {
+            offscreenVideo.removeEventListener('seeked', onSeeked);
+            finish();
+          }, 800);
+          offscreenVideo.addEventListener('seeked', onSeeked, { once: true });
           offscreenVideo.currentTime = targetTime;
         });
 
@@ -1298,7 +1339,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   <video
                     ref={videoDarkRef}
                     muted
+                    defaultMuted
                     playsInline
+                    {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
                     preload="auto"
                     autoPlay={false}
                     loop={false}
@@ -1307,15 +1350,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                     disableRemotePlayback
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
+                      if (e.currentTarget.readyState >= 2) {
+                        heroReadinessCoordinator.setVideo02Ready();
+                      }
                     }}
                     onLoadedData={(e) => {
                       if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
-                      if (e.currentTarget.readyState >= 4) {
+                      if (e.currentTarget.readyState >= 2) {
+                        heroReadinessCoordinator.setVideo02Ready();
+                      }
+                    }}
+                    onCanPlay={(e) => {
+                      if (e.currentTarget.readyState >= 2) {
                         heroReadinessCoordinator.setVideo02Ready();
                       }
                     }}
                     onCanPlayThrough={(e) => {
-                      if (e.currentTarget.readyState >= 4) {
+                      if (e.currentTarget.readyState >= 2) {
                         heroReadinessCoordinator.setVideo02Ready();
                       }
                     }}
@@ -1341,7 +1392,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   <video
                     ref={videoLightRef}
                     muted
+                    defaultMuted
                     playsInline
+                    {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
                     preload="auto"
                     autoPlay={false}
                     loop={false}
@@ -1383,7 +1436,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   <video
                     ref={introVideoDarkRef}
                     muted
+                    defaultMuted
                     playsInline
+                    {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
                     preload="auto"
                     autoPlay={false}
                     loop={false}
@@ -1392,15 +1447,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                     disableRemotePlayback
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
+                      if (e.currentTarget.readyState >= 2) {
+                        heroReadinessCoordinator.setVideo01Ready();
+                      }
                     }}
                     onLoadedData={(e) => {
                       if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
-                      if (e.currentTarget.readyState >= 4) {
+                      if (e.currentTarget.readyState >= 2) {
+                        heroReadinessCoordinator.setVideo01Ready();
+                      }
+                    }}
+                    onCanPlay={(e) => {
+                      if (e.currentTarget.readyState >= 2) {
                         heroReadinessCoordinator.setVideo01Ready();
                       }
                     }}
                     onCanPlayThrough={(e) => {
-                      if (e.currentTarget.readyState >= 4) {
+                      if (e.currentTarget.readyState >= 2) {
                         heroReadinessCoordinator.setVideo01Ready();
                       }
                     }}
@@ -1426,7 +1489,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   <video
                     ref={introVideoLightRef}
                     muted
+                    defaultMuted
                     playsInline
+                    {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
                     preload="auto"
                     autoPlay={false}
                     loop={false}

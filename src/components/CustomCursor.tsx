@@ -266,6 +266,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
     };
 
     const handleScroll = () => {
+      if (coords.current.mouseX < 0 || coords.current.mouseY < 0) return;
       const el = document.elementFromPoint(coords.current.mouseX, coords.current.mouseY) as HTMLElement | null;
       const isInsideHero = Boolean(el?.closest('[data-hero-stage="true"]'));
       const isLightHero = Boolean(el?.closest('[data-hero-light="true"]'));
@@ -278,6 +279,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ isEnabled = true }) 
 
     const handleHeroThemeChange = () => {
       requestAnimationFrame(() => {
+        if (coords.current.mouseX < 0 || coords.current.mouseY < 0) return;
         const el = document.elementFromPoint(coords.current.mouseX, coords.current.mouseY) as HTMLElement | null;
         isInsideHeroRef.current = Boolean(el?.closest('[data-hero-stage="true"]'));
         isLightHeroRef.current = Boolean(el?.closest('[data-hero-light="true"]'));

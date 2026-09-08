@@ -134,7 +134,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
   const scrollTargetRef = useRef(0);
   const smoothedProgressRef = useRef(0);
   const durationRef = useRef(6.67);
-  const framesRef = useRef<ImageBitmap[]>([]);
+  const framesRef = useRef<CanvasImageSource[]>([]);
   const isExtractingRef = useRef(false);
 
   // Synchronize scroll target from external prop (Hero integrated) or internal scroll
@@ -201,12 +201,17 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Media unlock & decoder priming for iOS Safari & Android mobile decoders
+  // Media unlock & decoder priming for iOS Safari, WebKit, Gecko, and Blink
   useEffect(() => {
     const unlockVideo = () => {
       const v = videoRef.current;
       if (!v) return;
       v.muted = true;
+      v.defaultMuted = true;
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.setAttribute('x5-playsinline', '');
+      v.setAttribute('muted', '');
       const p = v.play();
       if (p !== undefined) {
         p.then(() => {
@@ -216,12 +221,22 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
     };
 
     unlockVideo();
-    window.addEventListener('touchstart', unlockVideo, { once: true, passive: true });
-    window.addEventListener('click', unlockVideo, { once: true, passive: true });
+    const unlockEvents: Array<keyof WindowEventMap> = [
+      'touchstart',
+      'pointerdown',
+      'click',
+      'wheel',
+      'scroll',
+      'keydown',
+    ];
+    unlockEvents.forEach((evt) => {
+      window.addEventListener(evt, unlockVideo, { once: true, passive: true });
+    });
 
     return () => {
-      window.removeEventListener('touchstart', unlockVideo);
-      window.removeEventListener('click', unlockVideo);
+      unlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, unlockVideo);
+      });
     };
   }, []);
 
@@ -254,9 +269,11 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
       const offscreenVideo = document.createElement('video');
       offscreenVideo.muted = true;
+      offscreenVideo.defaultMuted = true;
       offscreenVideo.playsInline = true;
       offscreenVideo.setAttribute('playsinline', '');
       offscreenVideo.setAttribute('webkit-playsinline', '');
+      offscreenVideo.setAttribute('x5-playsinline', '');
       offscreenVideo.setAttribute('muted', '');
       offscreenVideo.setAttribute('disableremoteplayback', '');
       offscreenVideo.setAttribute('disablepictureinpicture', '');
@@ -292,7 +309,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
       const targetFrames = Math.min(75, Math.max(24, Math.floor(duration * 11)));
       const extractCanvas = document.createElement('canvas');
-      const ctx = extractCanvas.getContext('2d');
+      const ctx = extractCanvas.getContext('2d', { willReadFrequently: true });
 
       const videoWidth = offscreenVideo.videoWidth || 1920;
       const videoHeight = offscreenVideo.videoHeight || 1080;
@@ -304,7 +321,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       extractCanvas.width = targetWidth;
       extractCanvas.height = targetHeight;
 
-      const extracted: ImageBitmap[] = [];
+      const extracted: CanvasImageSource[] = [];
 
       try {
         for (let i = 0; i < targetFrames; i++) {
@@ -313,19 +330,42 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
             (i / (targetFrames - 1)) * Math.max(0, duration - 0.05);
 
           await new Promise<void>((resolve) => {
+            let done = false;
+            let tid: any = null;
+            const finish = () => {
+              if (done) return;
+              done = true;
+              clearTimeout(tid);
+              requestAnimationFrame(() => {
+                resolve();
+              });
+            };
             const onSeeked = () => {
               offscreenVideo.removeEventListener('seeked', onSeeked);
-              resolve();
+              if ('requestVideoFrameCallback' in offscreenVideo) {
+                (offscreenVideo as any).requestVideoFrameCallback(finish);
+              } else {
+                finish();
+              }
             };
-            offscreenVideo.addEventListener('seeked', onSeeked);
+            tid = setTimeout(() => {
+              offscreenVideo.removeEventListener('seeked', onSeeked);
+              finish();
+            }, 800);
+            offscreenVideo.addEventListener('seeked', onSeeked, { once: true });
             offscreenVideo.currentTime = targetTime;
           });
 
           if (ctx) {
             ctx.drawImage(offscreenVideo, 0, 0, targetWidth, targetHeight);
-            if ('createImageBitmap' in window) {
-              const bmp = await createImageBitmap(extractCanvas);
-              extracted.push(bmp);
+            // Persistent canvas elements: immune to ImageBitmap invalidation, survives all browsers
+            const c = document.createElement('canvas');
+            c.width = targetWidth;
+            c.height = targetHeight;
+            const cCtx = c.getContext('2d');
+            if (cCtx) {
+              cCtx.drawImage(extractCanvas, 0, 0);
+              extracted.push(c);
             }
           }
         }
@@ -355,7 +395,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
     };
 
     const onScrollTrigger = () => {
-      if ((window.scrollY || window.pageYOffset) > 500) {
+      if ((window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0) > 500) {
         triggerExtraction();
       }
     };
@@ -367,7 +407,6 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       isMounted = false;
       window.removeEventListener('scroll', onScrollTrigger);
       clearTimeout(idleTid);
-      framesRef.current.forEach((bmp) => bmp.close());
     };
   }, []);
 
@@ -420,12 +459,14 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           const bmp = frames[frameIndex];
           if (bmp) {
             const focalX = 0.68;
+            const frameW = (bmp as any).width || 1280;
+            const frameH = (bmp as any).height || 720;
             const { shiftX, shiftY, drawWidth, drawHeight } =
               calculateDrawBounds(
                 canvas.width,
                 canvas.height,
-                bmp.width,
-                bmp.height,
+                frameW,
+                frameH,
                 focalX
               );
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -481,7 +522,11 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           src={VIDEO_URL}
           preload="auto"
           muted
+          defaultMuted
           playsInline
+          {...({ 'webkit-playsinline': '', 'playsinline': '', 'x5-playsinline': '' } as any)}
+          disablePictureInPicture
+          disableRemotePlayback
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
             if (v.duration) {

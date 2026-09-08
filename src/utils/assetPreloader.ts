@@ -119,6 +119,7 @@ export function preloadAndVerifyVideo(
 
     const video = document.createElement('video');
     video.muted = true;
+    video.defaultMuted = true;
     video.playsInline = true;
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
@@ -148,6 +149,7 @@ export function preloadAndVerifyVideo(
       clearTimeout(retryTimer);
       video.onloadedmetadata = null;
       video.onloadeddata = null;
+      video.oncanplay = null;
       video.oncanplaythrough = null;
       video.onseeked = null;
       video.onerror = null;
@@ -173,7 +175,7 @@ export function preloadAndVerifyVideo(
         const c = document.createElement('canvas');
         c.width = 16;
         c.height = 16;
-        const ctx = c.getContext('2d');
+        const ctx = c.getContext('2d', { willReadFrequently: true });
         if (ctx) {
           ctx.drawImage(video, 0, 0, 16, 16);
           const data = ctx.getImageData(8, 8, 1, 1).data;
@@ -189,8 +191,9 @@ export function preloadAndVerifyVideo(
     const checkReadiness = () => {
       if (isDone) return;
       const validDuration = isFinite(video.duration) && video.duration > 0;
-      // readyState >= 4 is HAVE_ENOUGH_DATA; on some mobile browsers readyState >= 3 with valid duration
-      if ((video.readyState >= 4 || video.readyState >= 3) && validDuration) {
+      // In Safari/WebKit and mobile Chrome, unplayed videos with preload="auto" stop at readyState 2 (HAVE_CURRENT_DATA)
+      // readyState >= 2 guarantees that frame 0 is loaded and available to render onto canvas
+      if (video.readyState >= 2 && validDuration) {
         testRenderFirstFrame();
         finish(true);
       }
@@ -198,13 +201,14 @@ export function preloadAndVerifyVideo(
 
     video.onloadedmetadata = () => {
       try {
-        // Seek slightly forward to force frame 0 texture decode
+        // Seek slightly forward to force frame 0 texture decode in Safari / WebKit
         video.currentTime = 0.02;
       } catch {}
       checkReadiness();
     };
 
     video.onloadeddata = checkReadiness;
+    video.oncanplay = checkReadiness;
     video.oncanplaythrough = checkReadiness;
     video.onseeked = checkReadiness;
 
