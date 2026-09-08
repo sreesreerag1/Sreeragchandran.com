@@ -32,7 +32,7 @@ export const App: React.FC = () => {
             6. Creative Philosophy section reveals from ABOVE the video container.
             7. Video exits viewport.
         */}
-        <HeroSection />
+        <HeroSection isSiteLoaded={isSiteLoaded} />
 
         {/* SECTION 02: MARQUEE PORTFOLIO GALLERY (#050505 dark luxury editorial gallery) */}
         <MarqueeGallery />

@@ -21,9 +21,11 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
   }, [onComplete]);
 
   useEffect(() => {
-    // Lock body scrolling during preloader
-    const originalOverflow = document.body.style.overflow;
+    // Lock body and html scrolling during preloader
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalDocOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setIsReducedMotion(prefersReduced);
@@ -41,7 +43,8 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
         // 750ms upward slide transition
         setTimeout(() => {
           setIsFinished(true);
-          document.body.style.overflow = '';
+          document.body.style.overflow = originalBodyOverflow;
+          document.documentElement.style.overflow = originalDocOverflow;
           if (onCompleteRef.current) {
             onCompleteRef.current();
           }
@@ -85,18 +88,19 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       targetPercentRef.current = 100;
     });
 
-    // Hard fallback safety watchdog: guarantee exit after 2.8s max
+    // Hard fallback safety watchdog: guarantee exit after 9.5s max (prevents infinite lock if offline)
     const safetyWatchdog = setTimeout(() => {
       targetPercentRef.current = 100;
       currentPercentRef.current = 100;
       setPercent(100);
       triggerExit();
-    }, 2800);
+    }, 9500);
 
     return () => {
       cancelAnimationFrame(animId);
       clearTimeout(safetyWatchdog);
-      document.body.style.overflow = originalOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalDocOverflow;
     };
   }, []);
 

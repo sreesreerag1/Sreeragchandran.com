@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Reveal } from '../components/Reveal';
 import CreativePhilosophy from './CreativePhilosophy';
+import { heroReadinessCoordinator } from '../utils/assetPreloader';
+
+export interface HeroSectionProps {
+  isSiteLoaded?: boolean;
+}
 
 // Dark Mode Videos (Default)
 const DARK_HERO_VIDEO_URL = '/videos/hero.mp4?v=5';
@@ -89,10 +94,14 @@ const drawFrameToCanvas = (
   ctx.drawImage(frame, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
 };
 
-// Safe seek helper ensuring valid frame boundaries (never EOF, never negative, zero fastSeek snapping)
+// Safe seek helper ensuring valid frame boundaries (readyState >= 2, non-seeking, throttled)
 const safeSeek = (v: HTMLVideoElement, time: number) => {
-  const dur = v.duration || 10;
+  if (!v || v.readyState < 2) return;
+  if (v.seeking) return; // Prevent seek flooding while browser is already seeking
+  const dur = v.duration;
+  if (!dur || !isFinite(dur) || dur <= 0) return;
   const clampedTime = Math.max(0.02, Math.min(dur - 0.18, time));
+  if (Math.abs(v.currentTime - clampedTime) < 0.015) return; // Skip micro changes
   try {
     v.currentTime = clampedTime;
   } catch {}
@@ -105,7 +114,12 @@ const isMobileDevice = () => {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && 'ontouchend' in document);
 };
 
-export const HeroSection: React.FC = () => {
+export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true }) => {
+  const isSiteLoadedRef = useRef(isSiteLoaded);
+  useEffect(() => {
+    isSiteLoadedRef.current = isSiteLoaded;
+  }, [isSiteLoaded]);
+
   // Visual Mood Theme: 'dark' (default) vs 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const isDark = theme === 'dark';
@@ -299,6 +313,7 @@ export const HeroSection: React.FC = () => {
   // Lean passive scroll and resize listener strictly recording scroll and viewport changes
   useEffect(() => {
     const handleScroll = () => {
+      if (!isSiteLoadedRef.current) return;
       const container = containerRef.current;
       if (!container) return;
 
@@ -337,6 +352,7 @@ export const HeroSection: React.FC = () => {
   // Tilting the phone forward/backward produces ZERO movement on the creature.
   // =========================================================================
   const handleOrientation = useCallback((e: DeviceOrientationEvent) => {
+    if (!isSiteLoadedRef.current) return;
     if (!isMobileDevice()) return;
     if (e.gamma === null || typeof e.gamma !== 'number') return;
 
@@ -423,6 +439,7 @@ export const HeroSection: React.FC = () => {
   useEffect(() => {
     // Desktop mouse hover controller
     const handleMouseMove = (e: MouseEvent) => {
+      if (!isSiteLoadedRef.current) return;
       const rawNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
       const xNorm = Math.max(0.001, Math.min(0.999, rawNorm));
       latestMouseProgressRef.current = xNorm;
@@ -432,6 +449,7 @@ export const HeroSection: React.FC = () => {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (!isSiteLoadedRef.current) return;
       // If motion is actively streaming real tilt data, do not let touch drag conflict
       if (isMotionActiveRef.current) return;
       if (e.touches && e.touches.length > 0) {
@@ -656,9 +674,11 @@ export const HeroSection: React.FC = () => {
           if (videoUrl === DARK_INTRO_VIDEO_URL) {
             drawFrameToCanvas(introCanvasDarkRef.current, extracted[0], true);
             lastDrawnDarkIntroFrameRef.current = 0;
+            heroReadinessCoordinator.setVideo01Ready();
           } else if (videoUrl === DARK_HERO_VIDEO_URL) {
             drawFrameToCanvas(heroCanvasDarkRef.current, extracted[0], true);
             lastDrawnDarkHeroFrameRef.current = 0;
+            heroReadinessCoordinator.setVideo02Ready();
           } else if (videoUrl === LIGHT_INTRO_VIDEO_URL) {
             drawFrameToCanvas(introCanvasLightRef.current, extracted[0], false);
             lastDrawnLightIntroFrameRef.current = 0;
@@ -693,7 +713,7 @@ export const HeroSection: React.FC = () => {
     }
   };
 
-  // Preload and cache frames with prioritized Creature Intro & Hero Video extraction
+  // Preload and cache frames concurrently during loading screen
   useEffect(() => {
     let isMounted = true;
     const checkMounted = () => isMounted;
@@ -701,8 +721,8 @@ export const HeroSection: React.FC = () => {
     const isMobile = isMobileDevice();
 
     const startExtraction = async () => {
-      // 1. Dark Creature Intro: High priority for immediate mouse hover / tilt response on landing
-      await extractFrames(
+      // 1. Dark Creature Intro (Video 01) and Dark Hero (Video 02): Extract concurrently
+      const introPromise = extractFrames(
         DARK_INTRO_VIDEO_URL,
         isMobile ? 24 : 32,
         darkIntroFramesRef,
@@ -710,10 +730,8 @@ export const HeroSection: React.FC = () => {
         setIsDarkIntroFramesReady,
         checkMounted
       );
-      if (!isMounted) return;
 
-      // 2. Dark Hero Video: 60 full frames for buttery-smooth 60fps/120fps scroll scrubbing
-      await extractFrames(
+      const heroPromise = extractFrames(
         DARK_HERO_VIDEO_URL,
         isMobile ? 40 : 60,
         darkHeroFramesRef,
@@ -721,33 +739,27 @@ export const HeroSection: React.FC = () => {
         setIsDarkHeroFramesReady,
         checkMounted
       );
-      if (!isMounted) return;
 
-      // 3. Light Hero & Creature: Deferred in background for instant theme switching
-      const idleCallback =
-        (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 2500));
-      idleCallback(() => {
-        if (!isMounted) return;
-        extractFrames(
-          LIGHT_INTRO_VIDEO_URL,
-          isMobile ? 20 : 28,
-          lightIntroFramesRef,
-          lightIntroDurationRef,
-          setIsLightIntroFramesReady,
-          checkMounted
-        );
-        setTimeout(() => {
-          if (!isMounted) return;
-          extractFrames(
-            LIGHT_HERO_VIDEO_URL,
-            isMobile ? 32 : 48,
-            lightHeroFramesRef,
-            lightHeroDurationRef,
-            setIsLightHeroFramesReady,
-            checkMounted
-          );
-        }, 800);
-      });
+      // 2. Preload theme variants right away during loading screen (no waiting until hero appears)
+      extractFrames(
+        LIGHT_INTRO_VIDEO_URL,
+        isMobile ? 20 : 28,
+        lightIntroFramesRef,
+        lightIntroDurationRef,
+        setIsLightIntroFramesReady,
+        checkMounted
+      );
+
+      extractFrames(
+        LIGHT_HERO_VIDEO_URL,
+        isMobile ? 32 : 48,
+        lightHeroFramesRef,
+        lightHeroDurationRef,
+        setIsLightHeroFramesReady,
+        checkMounted
+      );
+
+      await Promise.all([introPromise, heroPromise]);
     };
 
     startExtraction();
@@ -762,8 +774,15 @@ export const HeroSection: React.FC = () => {
     let animId: number;
 
     const render = () => {
-      const now = performance.now();
       const rawScroll = rawScrollYRef.current;
+
+      if (!isSiteLoadedRef.current) {
+        smoothedScrollYRef.current = 0;
+        animId = requestAnimationFrame(render);
+        return;
+      }
+
+      const now = performance.now();
 
       // =======================================================================
       // HERO INTERACTION STATE MACHINE (CINEMATIC SEAMLESS HANDOFF)
@@ -1148,7 +1167,12 @@ export const HeroSection: React.FC = () => {
     <div
       ref={containerRef}
       className="relative w-full"
-      style={{ height: 'calc(100vh + 2000px)' }}
+      style={{
+        height: 'calc(100vh + 2000px)',
+        opacity: isSiteLoaded ? 1 : 0,
+        pointerEvents: isSiteLoaded ? 'auto' : 'none',
+        transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
     >
       {/* Sticky Viewport Stage: Pinned at top: 0 during Phase 1, 2, and 3 */}
       <div
@@ -1278,22 +1302,36 @@ export const HeroSection: React.FC = () => {
                 >
                   <video
                     ref={videoDarkRef}
-                    src={DARK_HERO_VIDEO_URL}
                     muted
                     playsInline
                     preload="auto"
+                    autoPlay={false}
+                    loop={false}
+                    controls={false}
+                    disablePictureInPicture
+                    disableRemotePlayback
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
                     }}
                     onLoadedData={(e) => {
                       if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
+                      if (e.currentTarget.readyState >= 4) {
+                        heroReadinessCoordinator.setVideo02Ready();
+                      }
+                    }}
+                    onCanPlayThrough={(e) => {
+                      if (e.currentTarget.readyState >= 4) {
+                        heroReadinessCoordinator.setVideo02Ready();
+                      }
                     }}
                     onSeeked={handleDarkHeroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
                       isDarkHeroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
-                  />
+                  >
+                    <source src={DARK_HERO_VIDEO_URL} type="video/mp4" />
+                  </video>
                   <canvas
                     ref={heroCanvasDarkRef}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
@@ -1307,10 +1345,14 @@ export const HeroSection: React.FC = () => {
                 >
                   <video
                     ref={videoLightRef}
-                    src={LIGHT_HERO_VIDEO_URL}
                     muted
                     playsInline
-                    preload={isDark ? 'none' : 'auto'}
+                    preload="auto"
+                    autoPlay={false}
+                    loop={false}
+                    controls={false}
+                    disablePictureInPicture
+                    disableRemotePlayback
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
                     }}
@@ -1318,11 +1360,13 @@ export const HeroSection: React.FC = () => {
                       if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleLightHeroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
                       isLightHeroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
-                  />
+                  >
+                    <source src={LIGHT_HERO_VIDEO_URL} type="video/mp4" />
+                  </video>
                   <canvas
                     ref={heroCanvasLightRef}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
@@ -1343,19 +1387,36 @@ export const HeroSection: React.FC = () => {
                 >
                   <video
                     ref={introVideoDarkRef}
-                    src={DARK_INTRO_VIDEO_URL}
                     muted
                     playsInline
                     preload="auto"
+                    autoPlay={false}
+                    loop={false}
+                    controls={false}
+                    disablePictureInPicture
+                    disableRemotePlayback
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
                     }}
+                    onLoadedData={(e) => {
+                      if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
+                      if (e.currentTarget.readyState >= 4) {
+                        heroReadinessCoordinator.setVideo01Ready();
+                      }
+                    }}
+                    onCanPlayThrough={(e) => {
+                      if (e.currentTarget.readyState >= 4) {
+                        heroReadinessCoordinator.setVideo01Ready();
+                      }
+                    }}
                     onSeeked={handleDarkIntroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
                       isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
-                  />
+                  >
+                    <source src={DARK_INTRO_VIDEO_URL} type="video/mp4" />
+                  </video>
                   <canvas
                     ref={introCanvasDarkRef}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
@@ -1369,19 +1430,28 @@ export const HeroSection: React.FC = () => {
                 >
                   <video
                     ref={introVideoLightRef}
-                    src={LIGHT_INTRO_VIDEO_URL}
                     muted
                     playsInline
-                    preload={isDark ? 'none' : 'auto'}
+                    preload="auto"
+                    autoPlay={false}
+                    loop={false}
+                    controls={false}
+                    disablePictureInPicture
+                    disableRemotePlayback
                     onLoadedMetadata={(e) => {
                       if (e.currentTarget.duration) lightIntroDurationRef.current = e.currentTarget.duration;
                     }}
+                    onLoadedData={(e) => {
+                      if (e.currentTarget.duration) lightIntroDurationRef.current = e.currentTarget.duration;
+                    }}
                     onSeeked={handleLightIntroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
                       isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
-                  />
+                  >
+                    <source src={LIGHT_INTRO_VIDEO_URL} type="video/mp4" />
+                  </video>
                   <canvas
                     ref={introCanvasLightRef}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
