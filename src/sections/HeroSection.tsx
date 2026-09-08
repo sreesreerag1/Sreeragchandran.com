@@ -49,6 +49,15 @@ const calculateDrawBounds = (
   return { shiftX, shiftY, drawWidth, drawHeight };
 };
 
+// Safe fastSeek helper with fallback to currentTime for ultra-responsive video scrubbing
+const safeSeek = (v: HTMLVideoElement, time: number) => {
+  if ('fastSeek' in v && typeof (v as any).fastSeek === 'function') {
+    (v as any).fastSeek(time);
+  } else {
+    v.currentTime = time;
+  }
+};
+
 // Helper to detect handheld mobile devices (phones/tablets only, never desktop)
 const isMobileDevice = () => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
@@ -109,7 +118,6 @@ export const HeroSection: React.FC = () => {
 
   const introTargetProgressRef = useRef(0.5);
   const introSmoothedProgressRef = useRef(0.5);
-  const [isAtTop, setIsAtTop] = useState(true);
 
   // iOS Safari Motion & Gyro Permission state (Mobile only)
   const [isMotionPermNeeded, setIsMotionPermNeeded] = useState(false);
@@ -129,19 +137,26 @@ export const HeroSection: React.FC = () => {
     }
   }, []);
 
-  // Direct DOM ref for buttery-smooth hardware-accelerated downward push transition (zero React re-renders)
+  // Direct DOM refs for buttery-smooth hardware-accelerated animations (zero React re-renders)
   const pushContainerRef = useRef<HTMLDivElement>(null);
-  const [showCue, setShowCue] = useState(false);
-  const [cueText, setCueText] = useState('');
+  const topPromptRef = useRef<HTMLDivElement>(null);
+  const statusCueRef = useRef<HTMLDivElement>(null);
 
   const headline1Ref = useRef<HTMLDivElement>(null);
   const headline2Ref = useRef<HTMLDivElement>(null);
   const supportTextRef = useRef<HTMLParagraphElement>(null);
   const rightTextRef = useRef<HTMLDivElement>(null);
-  const cueRef = useRef({ show: false, text: '' });
 
-  const scrollTargetProgressRef = useRef(0);
-  const smoothedVideoProgressRef = useRef(0);
+  // Unified high-precision scroll tracking
+  const rawScrollYRef = useRef(0);
+  const smoothedScrollYRef = useRef(0);
+
+  // Cached frame indexes to eliminate redundant canvas redraws when idle
+  const lastDrawnDarkHeroFrameRef = useRef(-1);
+  const lastDrawnLightHeroFrameRef = useRef(-1);
+  const lastDrawnDarkIntroFrameRef = useRef(-1);
+  const lastDrawnLightIntroFrameRef = useRef(-1);
+
   const darkHeroDurationRef = useRef(10.0);
   const lightHeroDurationRef = useRef(10.0);
   const darkIntroDurationRef = useRef(10.0);
@@ -157,7 +172,7 @@ export const HeroSection: React.FC = () => {
       if (Math.abs(v.currentTime - nextTime) > 0.02) {
         isDarkHeroSeekingRef.current = true;
         lastDarkHeroSeekTimeRef.current = performance.now();
-        v.currentTime = nextTime;
+        safeSeek(v, nextTime);
       }
     }
   }, []);
@@ -171,7 +186,7 @@ export const HeroSection: React.FC = () => {
       if (Math.abs(v.currentTime - nextTime) > 0.02) {
         isLightHeroSeekingRef.current = true;
         lastLightHeroSeekTimeRef.current = performance.now();
-        v.currentTime = nextTime;
+        safeSeek(v, nextTime);
       }
     }
   }, []);
@@ -185,7 +200,7 @@ export const HeroSection: React.FC = () => {
       if (Math.abs(v.currentTime - nextTime) > 0.02) {
         isDarkIntroSeekingRef.current = true;
         lastDarkIntroSeekTimeRef.current = performance.now();
-        v.currentTime = nextTime;
+        safeSeek(v, nextTime);
       }
     }
   }, []);
@@ -199,7 +214,7 @@ export const HeroSection: React.FC = () => {
       if (Math.abs(v.currentTime - nextTime) > 0.02) {
         isLightIntroSeekingRef.current = true;
         lastLightIntroSeekTimeRef.current = performance.now();
-        v.currentTime = nextTime;
+        safeSeek(v, nextTime);
       }
     }
   }, []);
@@ -216,9 +231,14 @@ export const HeroSection: React.FC = () => {
         ref.current.height = height * dpr;
       }
     });
+    // Invalidate cached drawn frames to re-render at new dimensions
+    lastDrawnDarkHeroFrameRef.current = -1;
+    lastDrawnLightHeroFrameRef.current = -1;
+    lastDrawnDarkIntroFrameRef.current = -1;
+    lastDrawnLightIntroFrameRef.current = -1;
   };
 
-  // Scroll listener strictly mapping hero pinned track
+  // Lean passive scroll listener strictly recording scroll position (zero DOM/React overhead)
   useEffect(() => {
     const handleScroll = () => {
       const container = containerRef.current;
@@ -226,133 +246,7 @@ export const HeroSection: React.FC = () => {
 
       const scrollY = window.scrollY || window.pageYOffset;
       const trackTop = container.offsetTop;
-      const totalScroll = container.offsetHeight - window.innerHeight;
-
-      if (totalScroll <= 0) return;
-
-      const currentScroll = Math.max(0, scrollY - trackTop);
-
-      // =========================================================================
-      // SCROLL-SCRUB CINEMATIC SEQUENCE:
-      // Video continues scrubbing across 0px -> 1550px
-      // Typography animates directly linked to scroll progress:
-      //   - Headline 1 moves upward to nearly touch label & fades out (300px -> 850px)
-      //   - Headline 2 rises from below & fades in (600px -> 1150px) [Overlap 600px - 850px]
-      //   - Supporting text emerges once headline 2 arrives (900px -> 1250px)
-      // Video freezes on final frame (1550px -> 1800px)
-      // Downward push into next section (1800px -> 2600px)
-      // =========================================================================
-
-      // 0. Intro Video (Video 1) Transition Trigger:
-      if (currentScroll > 3) {
-        if (introPhaseRef.current !== 'COMPLETE') {
-          introPhaseRef.current = 'COMPLETE';
-          introSmoothedProgressRef.current = 0;
-          isTransitionCompleteRef.current = true;
-          setIsAtTop(false);
-          if (introVideoDarkRef.current) introVideoDarkRef.current.pause();
-          if (introVideoLightRef.current) introVideoLightRef.current.pause();
-          if (introContainerRef.current) {
-            introContainerRef.current.style.transition = 'opacity 250ms ease-out';
-            introContainerRef.current.style.opacity = '0';
-            setTimeout(() => {
-              if (introContainerRef.current && introPhaseRef.current === 'COMPLETE') {
-                introContainerRef.current.style.visibility = 'hidden';
-              }
-            }, 260);
-          }
-        }
-      } else if (currentScroll <= 2) {
-        // Return to absolute top: re-enable explore state
-        if (introPhaseRef.current === 'COMPLETE') {
-          introPhaseRef.current = 'EXPLORE';
-          isTransitionCompleteRef.current = false;
-          setIsAtTop(true);
-          if (introContainerRef.current) {
-            introContainerRef.current.style.transition = 'opacity 300ms ease-out';
-            introContainerRef.current.style.opacity = '1';
-            introContainerRef.current.style.visibility = 'visible';
-          }
-          if (isMobileDevice()) {
-            if (introVideoDarkRef.current && isDark) introVideoDarkRef.current.play().catch(() => {});
-            if (introVideoLightRef.current && !isDark) introVideoLightRef.current.play().catch(() => {});
-          }
-        }
-      }
-
-      // 1. Continuous Video Scrub: 0.0 to 1.0 (activated immediately once user scrolls)
-      const videoTarget = Math.min(1.0, currentScroll / 1550);
-      scrollTargetProgressRef.current = videoTarget;
-
-      // 2. Scroll-Linked Typography Evolution (while video is playing):
-      // Headline 1: moves upward (0px -> -22px) toward label & fades out (1.0 -> 0.0) between 300px and 850px
-      const f1 = smoothstep(300, 850, currentScroll);
-      const h1Y = -f1 * 22;
-      const h1Op = 1 - f1;
-
-      // Headline 2: rises from below (+35px -> 0px) & fades in (0.0 -> 1.0) between 600px and 1150px
-      const f2 = smoothstep(600, 1150, currentScroll);
-      const h2Y = (1 - f2) * 35;
-      const h2Op = f2;
-
-      // Supporting text: emerges gently once headline 2 settles (between 900px and 1250px)
-      const fSupport = smoothstep(900, 1250, currentScroll);
-      const supY = (1 - fSupport) * 15;
-      const supOp = fSupport;
-
-      // Right column subtle parallax lift while video plays (0px -> 1550px)
-      const rightProgress = Math.min(1.0, currentScroll / 1550);
-      const rightY = -rightProgress * 20;
-
-      if (headline1Ref.current) {
-        headline1Ref.current.style.transform = `translateY(${h1Y.toFixed(1)}px)`;
-        headline1Ref.current.style.opacity = h1Op.toFixed(3);
-        headline1Ref.current.style.pointerEvents = h1Op > 0.05 ? 'auto' : 'none';
-      }
-      if (headline2Ref.current) {
-        headline2Ref.current.style.transform = `translateY(${h2Y.toFixed(1)}px)`;
-        headline2Ref.current.style.opacity = h2Op.toFixed(3);
-        headline2Ref.current.style.pointerEvents = h2Op > 0.05 ? 'auto' : 'none';
-      }
-      if (supportTextRef.current) {
-        supportTextRef.current.style.transform = `translateY(${supY.toFixed(1)}px)`;
-        supportTextRef.current.style.opacity = supOp.toFixed(3);
-      }
-      if (rightTextRef.current) {
-        rightTextRef.current.style.transform = `translateY(${rightY.toFixed(1)}px)`;
-      }
-
-      // 3. Status Cue: Shows once video finishes & holds (1550px -> 1800px)
-      const freezeStart = 1550;
-      const pushStart = 1800;
-      let newShow = false;
-      let newText = '';
-      if (currentScroll >= freezeStart && currentScroll < pushStart) {
-        newShow = true;
-        newText = 'CONTINUE SCROLLING FOR PHILOSOPHY ↓';
-      }
-
-      if (cueRef.current.show !== newShow || cueRef.current.text !== newText) {
-        cueRef.current = { show: newShow, text: newText };
-        setShowCue(newShow);
-        setCueText(newText);
-      }
-
-      // 4. Downward Push Progress (1800px -> 2600px):
-      // Direct DOM transform with zero CSS transition interference and zero React state lag
-      const pushEnd = 2600;
-      let push = 0;
-      if (currentScroll > pushStart) {
-        push = Math.min(1.0, (currentScroll - pushStart) / (pushEnd - pushStart));
-      }
-      const easedPush =
-        push < 0.5
-          ? 4 * push * push * push
-          : 1 - Math.pow(-2 * push + 2, 3) / 2;
-
-      if (pushContainerRef.current) {
-        pushContainerRef.current.style.transform = `translate3d(0, calc(-100vh + ${(easedPush * 100).toFixed(3)}vh), 0)`;
-      }
+      rawScrollYRef.current = Math.max(0, scrollY - trackTop);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -635,6 +529,12 @@ export const HeroSection: React.FC = () => {
             }
           } catch {}
         }
+
+        // Progressive activation: enable canvas as soon as 8 frames are ready for immediate interactive response
+        if (isMounted() && extracted.length === 8) {
+          targetRef.current = [...extracted];
+          setReady(true);
+        }
       }
 
       // Cleanup DOM video element
@@ -642,17 +542,17 @@ export const HeroSection: React.FC = () => {
         offscreenVideo.parentNode.removeChild(offscreenVideo);
       }
 
-      // Activate canvas ONLY when frame sequence is complete (>=85% of target frames)
-      if (isMounted() && extracted.length >= Math.floor(targetFrames * 0.85)) {
-        targetRef.current = extracted;
-        setReady(true);
-      }
-    } catch (err) {
-      console.warn('Frame cache extraction fallback to video scrub:', videoUrl, err);
+    // Complete sequence assignment
+    if (isMounted() && extracted.length >= Math.floor(targetFrames * 0.7)) {
+      targetRef.current = extracted;
+      setReady(true);
     }
-  };
+  } catch (err) {
+    console.warn('Frame cache extraction fallback to video scrub:', videoUrl, err);
+  }
+};
 
-  // Preload and cache frames for both Dark and Light video moods
+  // Preload and cache frames with prioritized Hero Video extraction
   useEffect(() => {
     let isMounted = true;
     const checkMounted = () => isMounted;
@@ -660,44 +560,45 @@ export const HeroSection: React.FC = () => {
     const isMobile = isMobileDevice();
 
     if (isMobile) {
-      // On mobile devices, extract 24 lightweight frames of the intro creature
-      // so device motion / tilt control is instant and zero-lag without heavy memory consumption
-      extractFrames(DARK_INTRO_VIDEO_URL, 24, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
-      const timer = setTimeout(() => {
+      // Mobile: Extract 24 frames of Dark Hero Video FIRST, so mobile scroll scrub is buttery 60fps!
+      extractFrames(DARK_HERO_VIDEO_URL, 24, darkHeroFramesRef, darkHeroDurationRef, setIsDarkHeroFramesReady, checkMounted);
+      // And extract 16 lightweight frames of Dark Creature for tilt
+      setTimeout(() => {
         if (!isMounted) return;
-        extractFrames(LIGHT_INTRO_VIDEO_URL, 24, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
-      }, 500);
+        extractFrames(DARK_INTRO_VIDEO_URL, 16, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
+      }, 600);
 
       return () => {
         isMounted = false;
-        clearTimeout(timer);
-        darkIntroFramesRef.current.forEach((bmp) => {
+        darkHeroFramesRef.current.forEach((bmp) => {
           if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
         });
-        lightIntroFramesRef.current.forEach((bmp) => {
+        darkIntroFramesRef.current.forEach((bmp) => {
           if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
         });
       };
     }
 
     // On Desktop:
-    // Extract 36 frames for Creature (Dark & Light) for silky smooth 60-120fps mouse hover tracking.
-    // Extract 48 frames for Hero Video (Dark & Light) for buttery-smooth scroll scrubbing.
     const startDesktopExtraction = async () => {
-      // 1. Dark Creature Intro: Primary layer visible immediately to user
-      await extractFrames(DARK_INTRO_VIDEO_URL, 36, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
+      // 1. Dark Hero Video: Highest priority! Scrub layer as soon as user scrolls
+      await extractFrames(DARK_HERO_VIDEO_URL, 36, darkHeroFramesRef, darkHeroDurationRef, setIsDarkHeroFramesReady, checkMounted);
       if (!isMounted) return;
 
-      // 2. Dark Hero Video: Scrub layer as soon as user scrolls
-      await extractFrames(DARK_HERO_VIDEO_URL, 48, darkHeroFramesRef, darkHeroDurationRef, setIsDarkHeroFramesReady, checkMounted);
+      // 2. Dark Creature Intro: 20 lightweight frames for mouse hover tracking
+      await extractFrames(DARK_INTRO_VIDEO_URL, 20, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
       if (!isMounted) return;
 
-      // 3. Light Creature Intro & Light Hero Video: Background preload for seamless theme switching
-      extractFrames(LIGHT_INTRO_VIDEO_URL, 36, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
-      setTimeout(() => {
+      // 3. Light Hero Video & Light Creature Intro: Deferred so they never block initial interaction
+      const idleCallback = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 4000));
+      idleCallback(() => {
         if (!isMounted) return;
-        extractFrames(LIGHT_HERO_VIDEO_URL, 48, lightHeroFramesRef, lightHeroDurationRef, setIsLightHeroFramesReady, checkMounted);
-      }, 400);
+        extractFrames(LIGHT_HERO_VIDEO_URL, 36, lightHeroFramesRef, lightHeroDurationRef, setIsLightHeroFramesReady, checkMounted);
+        setTimeout(() => {
+          if (!isMounted) return;
+          extractFrames(LIGHT_INTRO_VIDEO_URL, 20, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
+        }, 800);
+      });
     };
 
     startDesktopExtraction();
@@ -719,7 +620,7 @@ export const HeroSection: React.FC = () => {
     };
   }, []);
 
-  // Animation & scrub loop with lerp (0.28 / 0.26) - Synchronously updates both Dark & Light layers
+  // Unified 60fps/120fps Animation & Scrub Loop (Synchronizes Video, Canvas, Typography, and Downward Push)
   useEffect(() => {
     let animId: number;
 
@@ -727,54 +628,102 @@ export const HeroSection: React.FC = () => {
       const now = performance.now();
 
       // =======================================================================
-      // VIDEO 1 LIFECYCLE: EXPLORE -> REWINDING -> HANDOFF -> COMPLETE
+      // SMOOTHED SCROLL TRACKER (APPLE-GRADE INTERPOLATION)
       // =======================================================================
-      if (introPhaseRef.current === 'EXPLORE') {
-        const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
-        const lerpFactor = Math.abs(diff) > 0.15 ? 0.38 : 0.26;
-        introSmoothedProgressRef.current += diff * lerpFactor;
-        if (Math.abs(diff) < 0.0005) {
-          introSmoothedProgressRef.current = introTargetProgressRef.current;
-        }
-      } else if (introPhaseRef.current === 'REWINDING') {
-        const elapsed = now - rewindStartTimeRef.current;
-        const t = Math.min(1, elapsed / rewindDurationRef.current);
-        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        const currentRewind = rewindStartProgressRef.current * (1 - eased);
-        introSmoothedProgressRef.current = Math.max(0, currentRewind);
+      const targetScroll = rawScrollYRef.current;
+      const scrollDelta = targetScroll - smoothedScrollYRef.current;
+      const absDelta = Math.abs(scrollDelta);
 
-        if (t >= 1) {
-          introSmoothedProgressRef.current = 0;
-          introPhaseRef.current = 'HANDOFF';
-          handoffStartTimeRef.current = now;
-        }
-      } else if (introPhaseRef.current === 'HANDOFF') {
-        introSmoothedProgressRef.current = 0;
-        if (now - handoffStartTimeRef.current >= 70) {
+      // Responsive, adaptive lerp factor:
+      // High-speed flick: 0.45 for snappy catch-up
+      // Moderate scrolling: 0.36
+      // Micro-scrolling: 0.28 for liquid softness
+      const lerp = absDelta > 150 ? 0.45 : absDelta > 40 ? 0.36 : 0.28;
+      smoothedScrollYRef.current += scrollDelta * lerp;
+      if (absDelta < 0.2) {
+        smoothedScrollYRef.current = targetScroll;
+      }
+      const s = smoothedScrollYRef.current;
+
+      // =======================================================================
+      // VIDEO 1 (CREATURE INTRO) LIFECYCLE & VISIBILITY
+      // =======================================================================
+      if (s > 4) {
+        if (introPhaseRef.current !== 'COMPLETE') {
           introPhaseRef.current = 'COMPLETE';
+          introSmoothedProgressRef.current = 0;
           isTransitionCompleteRef.current = true;
-
-          // Fade Video 1 out smoothly
+          if (introVideoDarkRef.current) introVideoDarkRef.current.pause();
+          if (introVideoLightRef.current) introVideoLightRef.current.pause();
           if (introContainerRef.current) {
-            introContainerRef.current.style.transition = 'opacity 250ms ease-out';
             introContainerRef.current.style.opacity = '0';
-            setTimeout(() => {
-              if (introContainerRef.current && introPhaseRef.current === 'COMPLETE') {
-                introContainerRef.current.style.visibility = 'hidden';
-              }
-            }, 260);
+            introContainerRef.current.style.visibility = 'hidden';
           }
-
-          // Unclamp Video 2 scroll target to match current scroll
-          const scrollY = window.scrollY || window.pageYOffset;
-          const trackTop = containerRef.current?.offsetTop || 0;
-          const currentScroll = Math.max(0, scrollY - trackTop);
-          scrollTargetProgressRef.current = Math.min(1.0, currentScroll / 1550);
+        }
+      } else if (s <= 2) {
+        if (introPhaseRef.current === 'COMPLETE') {
+          introPhaseRef.current = 'EXPLORE';
+          isTransitionCompleteRef.current = false;
+          if (introContainerRef.current) {
+            introContainerRef.current.style.opacity = '1';
+            introContainerRef.current.style.visibility = 'visible';
+          }
+          if (isMobileDevice()) {
+            if (introVideoDarkRef.current && isDark) introVideoDarkRef.current.play().catch(() => {});
+            if (introVideoLightRef.current && !isDark) introVideoLightRef.current.play().catch(() => {});
+          }
         }
       }
 
-      // Draw Video 1 (Creature Intro): Synchronously update both Dark & Light layers
-      if (introPhaseRef.current !== 'COMPLETE' || introSmoothedProgressRef.current > 0) {
+      // Top prompt visibility (only at absolute top)
+      if (topPromptRef.current) {
+        const showTop = s <= 15;
+        topPromptRef.current.style.opacity = showTop ? '1' : '0';
+        topPromptRef.current.style.pointerEvents = showTop ? 'auto' : 'none';
+      }
+
+      // Status cue visibility (freeze stage 1550px -> 1800px)
+      if (statusCueRef.current) {
+        const showCue = s >= 1550 && s < 1800;
+        statusCueRef.current.style.opacity = showCue ? '1' : '0';
+      }
+
+      // =======================================================================
+      // VIDEO 1 (CREATURE INTRO) EXPLORE / HOVER RENDERING
+      // Only runs when at the top (s <= 4)
+      // =======================================================================
+      if (s <= 4) {
+        if (introPhaseRef.current === 'EXPLORE') {
+          const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
+          const lerpFactor = Math.abs(diff) > 0.15 ? 0.38 : 0.26;
+          introSmoothedProgressRef.current += diff * lerpFactor;
+          if (Math.abs(diff) < 0.0005) {
+            introSmoothedProgressRef.current = introTargetProgressRef.current;
+          }
+        } else if (introPhaseRef.current === 'REWINDING') {
+          const elapsed = now - rewindStartTimeRef.current;
+          const t = Math.min(1, elapsed / rewindDurationRef.current);
+          const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+          const currentRewind = rewindStartProgressRef.current * (1 - eased);
+          introSmoothedProgressRef.current = Math.max(0, currentRewind);
+
+          if (t >= 1) {
+            introSmoothedProgressRef.current = 0;
+            introPhaseRef.current = 'HANDOFF';
+            handoffStartTimeRef.current = now;
+          }
+        } else if (introPhaseRef.current === 'HANDOFF') {
+          introSmoothedProgressRef.current = 0;
+          if (now - handoffStartTimeRef.current >= 70) {
+            introPhaseRef.current = 'COMPLETE';
+            isTransitionCompleteRef.current = true;
+            if (introContainerRef.current) {
+              introContainerRef.current.style.opacity = '0';
+              introContainerRef.current.style.visibility = 'hidden';
+            }
+          }
+        }
+
         const introProgress = introSmoothedProgressRef.current;
 
         // Dark Creature:
@@ -784,22 +733,25 @@ export const HeroSection: React.FC = () => {
             darkFrames.length - 1,
             Math.max(0, Math.round(introProgress * (darkFrames.length - 1)))
           );
-          const frame = darkFrames[frameIndex];
-          if (frame) {
-            const ctx = introCanvasDarkRef.current.getContext('2d');
-            if (ctx) {
-              ctx.imageSmoothingEnabled = true;
-              ctx.imageSmoothingQuality = 'high';
-              const fWidth = (frame as any).width || 1280;
-              const fHeight = (frame as any).height || 720;
-              const bounds = calculateDrawBounds(
-                introCanvasDarkRef.current.width,
-                introCanvasDarkRef.current.height,
-                fWidth,
-                fHeight
-              );
-              ctx.clearRect(0, 0, introCanvasDarkRef.current.width, introCanvasDarkRef.current.height);
-              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+          if (frameIndex !== lastDrawnDarkIntroFrameRef.current) {
+            lastDrawnDarkIntroFrameRef.current = frameIndex;
+            const frame = darkFrames[frameIndex];
+            if (frame) {
+              const ctx = introCanvasDarkRef.current.getContext('2d');
+              if (ctx) {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                const fWidth = (frame as any).width || 1280;
+                const fHeight = (frame as any).height || 720;
+                const bounds = calculateDrawBounds(
+                  introCanvasDarkRef.current.width,
+                  introCanvasDarkRef.current.height,
+                  fWidth,
+                  fHeight
+                );
+                ctx.clearRect(0, 0, introCanvasDarkRef.current.width, introCanvasDarkRef.current.height);
+                ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+              }
             }
           }
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
@@ -812,7 +764,7 @@ export const HeroSection: React.FC = () => {
             } else {
               isDarkIntroSeekingRef.current = true;
               lastDarkIntroSeekTimeRef.current = now;
-              v.currentTime = targetTime;
+              safeSeek(v, targetTime);
             }
           }
         }
@@ -824,22 +776,25 @@ export const HeroSection: React.FC = () => {
             lightFrames.length - 1,
             Math.max(0, Math.round(introProgress * (lightFrames.length - 1)))
           );
-          const frame = lightFrames[frameIndex];
-          if (frame) {
-            const ctx = introCanvasLightRef.current.getContext('2d');
-            if (ctx) {
-              ctx.imageSmoothingEnabled = true;
-              ctx.imageSmoothingQuality = 'high';
-              const fWidth = (frame as any).width || 1280;
-              const fHeight = (frame as any).height || 720;
-              const bounds = calculateDrawBounds(
-                introCanvasLightRef.current.width,
-                introCanvasLightRef.current.height,
-                fWidth,
-                fHeight
-              );
-              ctx.clearRect(0, 0, introCanvasLightRef.current.width, introCanvasLightRef.current.height);
-              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+          if (frameIndex !== lastDrawnLightIntroFrameRef.current) {
+            lastDrawnLightIntroFrameRef.current = frameIndex;
+            const frame = lightFrames[frameIndex];
+            if (frame) {
+              const ctx = introCanvasLightRef.current.getContext('2d');
+              if (ctx) {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                const fWidth = (frame as any).width || 1280;
+                const fHeight = (frame as any).height || 720;
+                const bounds = calculateDrawBounds(
+                  introCanvasLightRef.current.width,
+                  introCanvasLightRef.current.height,
+                  fWidth,
+                  fHeight
+                );
+                ctx.clearRect(0, 0, introCanvasLightRef.current.width, introCanvasLightRef.current.height);
+                ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+              }
             }
           }
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
@@ -852,53 +807,49 @@ export const HeroSection: React.FC = () => {
             } else {
               isLightIntroSeekingRef.current = true;
               lastLightIntroSeekTimeRef.current = now;
-              v.currentTime = targetTime;
+              safeSeek(v, targetTime);
             }
           }
         }
       }
 
-      // 2. Main Hero Scroll Scrubbing: Synchronously update both Dark & Light layers
-      const target = scrollTargetProgressRef.current;
-      const delta = Math.abs(target - smoothedVideoProgressRef.current);
-      const lerpFactor = delta > 0.15 ? 0.38 : 0.28;
-      smoothedVideoProgressRef.current +=
-        (target - smoothedVideoProgressRef.current) * lerpFactor;
+      // =======================================================================
+      // VIDEO 2 (HERO VIDEO) SCROLL SCRUBBING (0px -> 1550px)
+      // Synchronized with exact smoothed scroll progress
+      // =======================================================================
+      const heroProgress = Math.min(1.0, s / 1550);
 
-      if (Math.abs(target - smoothedVideoProgressRef.current) < 0.001) {
-        smoothedVideoProgressRef.current = target;
-      }
-
-      const smoothed = smoothedVideoProgressRef.current;
-
-      // Dark Hero:
+      // Dark Hero Video / Canvas:
       if (heroCanvasDarkRef.current && darkHeroFramesRef.current.length > 0) {
         const darkFrames = darkHeroFramesRef.current;
         const frameIndex = Math.min(
           darkFrames.length - 1,
-          Math.max(0, Math.round(smoothed * (darkFrames.length - 1)))
+          Math.max(0, Math.round(heroProgress * (darkFrames.length - 1)))
         );
-        const frame = darkFrames[frameIndex];
-        if (frame) {
-          const ctx = heroCanvasDarkRef.current.getContext('2d');
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            const fWidth = (frame as any).width || 1280;
-            const fHeight = (frame as any).height || 720;
-            const bounds = calculateDrawBounds(
-              heroCanvasDarkRef.current.width,
-              heroCanvasDarkRef.current.height,
-              fWidth,
-              fHeight
-            );
-            ctx.clearRect(0, 0, heroCanvasDarkRef.current.width, heroCanvasDarkRef.current.height);
-            ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+        if (frameIndex !== lastDrawnDarkHeroFrameRef.current) {
+          lastDrawnDarkHeroFrameRef.current = frameIndex;
+          const frame = darkFrames[frameIndex];
+          if (frame) {
+            const ctx = heroCanvasDarkRef.current.getContext('2d');
+            if (ctx) {
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              const fWidth = (frame as any).width || 1280;
+              const fHeight = (frame as any).height || 720;
+              const bounds = calculateDrawBounds(
+                heroCanvasDarkRef.current.width,
+                heroCanvasDarkRef.current.height,
+                fWidth,
+                fHeight
+              );
+              ctx.clearRect(0, 0, heroCanvasDarkRef.current.width, heroCanvasDarkRef.current.height);
+              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+            }
           }
         }
       } else if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
         const v = videoDarkRef.current;
-        const targetTime = smoothed * Math.max(0, darkHeroDurationRef.current - 0.05);
+        const targetTime = heroProgress * Math.max(0, darkHeroDurationRef.current - 0.05);
         if (Math.abs(v.currentTime - targetTime) > 0.02) {
           const isStuck = isDarkHeroSeekingRef.current && (now - lastDarkHeroSeekTimeRef.current > 500);
           if (v.seeking && !isStuck) {
@@ -906,39 +857,42 @@ export const HeroSection: React.FC = () => {
           } else {
             isDarkHeroSeekingRef.current = true;
             lastDarkHeroSeekTimeRef.current = now;
-            v.currentTime = targetTime;
+            safeSeek(v, targetTime);
           }
         }
       }
 
-      // Light Hero:
+      // Light Hero Video / Canvas:
       if (heroCanvasLightRef.current && lightHeroFramesRef.current.length > 0) {
         const lightFrames = lightHeroFramesRef.current;
         const frameIndex = Math.min(
           lightFrames.length - 1,
-          Math.max(0, Math.round(smoothed * (lightFrames.length - 1)))
+          Math.max(0, Math.round(heroProgress * (lightFrames.length - 1)))
         );
-        const frame = lightFrames[frameIndex];
-        if (frame) {
-          const ctx = heroCanvasLightRef.current.getContext('2d');
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            const fWidth = (frame as any).width || 1280;
-            const fHeight = (frame as any).height || 720;
-            const bounds = calculateDrawBounds(
-              heroCanvasLightRef.current.width,
-              heroCanvasLightRef.current.height,
-              fWidth,
-              fHeight
-            );
-            ctx.clearRect(0, 0, heroCanvasLightRef.current.width, heroCanvasLightRef.current.height);
-            ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+        if (frameIndex !== lastDrawnLightHeroFrameRef.current) {
+          lastDrawnLightHeroFrameRef.current = frameIndex;
+          const frame = lightFrames[frameIndex];
+          if (frame) {
+            const ctx = heroCanvasLightRef.current.getContext('2d');
+            if (ctx) {
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              const fWidth = (frame as any).width || 1280;
+              const fHeight = (frame as any).height || 720;
+              const bounds = calculateDrawBounds(
+                heroCanvasLightRef.current.width,
+                heroCanvasLightRef.current.height,
+                fWidth,
+                fHeight
+              );
+              ctx.clearRect(0, 0, heroCanvasLightRef.current.width, heroCanvasLightRef.current.height);
+              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+            }
           }
         }
       } else if (videoLightRef.current && lightHeroDurationRef.current > 0) {
         const v = videoLightRef.current;
-        const targetTime = smoothed * Math.max(0, lightHeroDurationRef.current - 0.05);
+        const targetTime = heroProgress * Math.max(0, lightHeroDurationRef.current - 0.05);
         if (Math.abs(v.currentTime - targetTime) > 0.02) {
           const isStuck = isLightHeroSeekingRef.current && (now - lastLightHeroSeekTimeRef.current > 500);
           if (v.seeking && !isStuck) {
@@ -946,9 +900,67 @@ export const HeroSection: React.FC = () => {
           } else {
             isLightHeroSeekingRef.current = true;
             lastLightHeroSeekTimeRef.current = now;
-            v.currentTime = targetTime;
+            safeSeek(v, targetTime);
           }
         }
+      }
+
+      // =======================================================================
+      // TYPOGRAPHY EVOLUTION (SYNCHRONIZED IN EXACT SAME FRAME AS VIDEO)
+      // =======================================================================
+      // Headline 1: moves upward (0px -> -22px) and fades out (1.0 -> 0.0) between 300px and 850px
+      const f1 = smoothstep(300, 850, s);
+      const h1Y = -f1 * 22;
+      const h1Op = 1 - f1;
+
+      // Headline 2: rises from below (+35px -> 0px) and fades in (0.0 -> 1.0) between 600px and 1150px
+      const f2 = smoothstep(600, 1150, s);
+      const h2Y = (1 - f2) * 35;
+      const h2Op = f2;
+
+      // Supporting text: emerges gently (15px -> 0px, 0.0 -> 1.0) between 900px and 1250px
+      const fSup = smoothstep(900, 1250, s);
+      const supY = (1 - fSup) * 15;
+      const supOp = fSup;
+
+      // Right column subtle parallax lift (0px -> -20px) between 0px and 1550px
+      const rightProgress = Math.min(1.0, s / 1550);
+      const rightY = -rightProgress * 20;
+
+      if (headline1Ref.current) {
+        headline1Ref.current.style.transform = `translate3d(0, ${h1Y.toFixed(2)}px, 0)`;
+        headline1Ref.current.style.opacity = h1Op.toFixed(3);
+        headline1Ref.current.style.pointerEvents = h1Op > 0.05 ? 'auto' : 'none';
+      }
+      if (headline2Ref.current) {
+        headline2Ref.current.style.transform = `translate3d(0, ${h2Y.toFixed(2)}px, 0)`;
+        headline2Ref.current.style.opacity = h2Op.toFixed(3);
+        headline2Ref.current.style.pointerEvents = h2Op > 0.05 ? 'auto' : 'none';
+      }
+      if (supportTextRef.current) {
+        supportTextRef.current.style.transform = `translate3d(0, ${supY.toFixed(2)}px, 0)`;
+        supportTextRef.current.style.opacity = supOp.toFixed(3);
+      }
+      if (rightTextRef.current) {
+        rightTextRef.current.style.transform = `translate3d(0, ${rightY.toFixed(2)}px, 0)`;
+      }
+
+      // =======================================================================
+      // DOWNWARD PUSH TRANSITION (1800px -> 2600px)
+      // =======================================================================
+      const pushStart = 1800;
+      const pushEnd = 2600;
+      let push = 0;
+      if (s > pushStart) {
+        push = Math.min(1.0, (s - pushStart) / (pushEnd - pushStart));
+      }
+      const easedPush =
+        push < 0.5
+          ? 4 * push * push * push
+          : 1 - Math.pow(-2 * push + 2, 3) / 2;
+
+      if (pushContainerRef.current) {
+        pushContainerRef.current.style.transform = `translate3d(0, calc(-100vh + ${(easedPush * 100).toFixed(3)}vh), 0)`;
       }
 
       animId = requestAnimationFrame(render);
@@ -959,7 +971,7 @@ export const HeroSection: React.FC = () => {
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, []);
+  }, [isDark]);
 
   return (
     /* Outer Pinned Scroll Track: Controls Video Scrubbing (Phase 1), Text Storytelling (Phase 2), and Downward Push (Phase 3) */
@@ -1237,10 +1249,10 @@ export const HeroSection: React.FC = () => {
                       {/* INITIAL HEADLINE: Moves upward into space beneath label & fades out */}
                       <div
                         ref={headline1Ref}
-                        className="col-start-1 row-start-1 flex flex-col items-start will-change-transform transition-all duration-75 ease-out"
+                        className="col-start-1 row-start-1 flex flex-col items-start will-change-transform"
                         style={{
                           opacity: 1,
-                          transform: 'translateY(0px)',
+                          transform: 'translate3d(0, 0px, 0)',
                         }}
                       >
                         <h1
@@ -1264,10 +1276,10 @@ export const HeroSection: React.FC = () => {
                       {/* NEW INCOMING HEADLINE: Rises from underneath & fades in */}
                       <div
                         ref={headline2Ref}
-                        className="col-start-1 row-start-1 flex flex-col items-start will-change-transform transition-all duration-75 ease-out"
+                        className="col-start-1 row-start-1 flex flex-col items-start will-change-transform"
                         style={{
                           opacity: 0,
-                          transform: 'translateY(35px)',
+                          transform: 'translate3d(0, 35px, 0)',
                           pointerEvents: 'none',
                         }}
                       >
@@ -1291,12 +1303,12 @@ export const HeroSection: React.FC = () => {
                         {/* Supporting text revealed below */}
                         <p
                           ref={supportTextRef}
-                          className={`mt-2 sm:mt-3 md:mt-5 max-w-sm sm:max-w-md text-xs sm:text-xs md:text-sm font-normal leading-relaxed drop-shadow-sm will-change-transform transition-all duration-75 ease-out transition-colors duration-600 ${
+                          className={`mt-2 sm:mt-3 md:mt-5 max-w-sm sm:max-w-md text-xs sm:text-xs md:text-sm font-normal leading-relaxed drop-shadow-sm will-change-transform transition-colors duration-600 ${
                             isDark ? 'text-white' : 'text-[#555555]'
                           }`}
                           style={{
                             opacity: 0,
-                            transform: 'translateY(15px)',
+                            transform: 'translate3d(0, 15px, 0)',
                           }}
                         >
                           I build ideas that move between brands, spaces, screens and culture, turning strategy into visual stories people remember.
@@ -1324,7 +1336,10 @@ export const HeroSection: React.FC = () => {
               {/* RIGHT SIDE: DESKTOP-ONLY INFORMATION BLOCK */}
               <div
                 ref={rightTextRef}
-                className="hidden md:flex w-full max-w-md lg:max-w-sm xl:max-w-md flex-col justify-end will-change-transform transition-all duration-75 ease-out"
+                className="hidden md:flex w-full max-w-md lg:max-w-sm xl:max-w-md flex-col justify-end will-change-transform"
+                style={{
+                  transform: 'translate3d(0, 0px, 0)',
+                }}
               >
                 <Reveal delay={300}>
                   <div className="flex flex-col">
@@ -1470,13 +1485,13 @@ export const HeroSection: React.FC = () => {
 
             {/* Interactive Prompt: Mobile shows tilt/motion prompt; Desktop strictly shows clean hover cue */}
             <div
-              className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-all duration-300 pointer-events-auto ${
+              ref={topPromptRef}
+              className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full border backdrop-blur-md font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.22em] shadow-sm transition-opacity duration-300 pointer-events-auto ${
                 isDark
                   ? 'border-white/20 bg-[#0B0B0B]/80 text-white'
                   : 'border-[#3A3A3A]/20 bg-white/80 text-[#3A3A3A]'
-              } ${
-                isAtTop && !showCue ? 'opacity-100' : 'opacity-0'
               }`}
+              style={{ opacity: 1 }}
             >
               {/* Mobile Only: Motion Tilt Permission Button / Swipe Prompt */}
               <div className="md:hidden">
@@ -1516,18 +1531,18 @@ export const HeroSection: React.FC = () => {
 
             {/* Dynamic Status Cue during scroll stages: positioned above bottom button */}
             <div
+              ref={statusCueRef}
               className={`absolute bottom-16 sm:bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] transition-opacity duration-300 pointer-events-none z-20 ${
                 isDark ? 'text-white' : 'text-[#555555]'
-              } ${
-                showCue ? 'opacity-100' : 'opacity-0'
               }`}
+              style={{ opacity: 0 }}
             >
               <span
                 className={`inline-block w-1.5 h-1.5 rounded-full animate-pulse ${
                   isDark ? 'bg-white' : 'bg-[#555555]'
                 }`}
               />
-              <span className={isDark ? 'text-white' : ''}>{cueText}</span>
+              <span className={isDark ? 'text-white' : ''}>CONTINUE SCROLLING FOR PHILOSOPHY ↓</span>
             </div>
           </div>
         </div>

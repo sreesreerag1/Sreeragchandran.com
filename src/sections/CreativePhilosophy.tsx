@@ -252,10 +252,27 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       }
     };
 
-    startExtraction();
+    let triggered = false;
+    const triggerExtraction = () => {
+      if (triggered || !isMounted) return;
+      triggered = true;
+      window.removeEventListener('scroll', onScrollTrigger);
+      startExtraction();
+    };
+
+    const onScrollTrigger = () => {
+      if ((window.scrollY || window.pageYOffset) > 1200) {
+        triggerExtraction();
+      }
+    };
+
+    window.addEventListener('scroll', onScrollTrigger, { passive: true });
+    const idleTid = setTimeout(triggerExtraction, 6000);
 
     return () => {
       isMounted = false;
+      window.removeEventListener('scroll', onScrollTrigger);
+      clearTimeout(idleTid);
       framesRef.current.forEach((bmp) => bmp.close());
     };
   }, []);
