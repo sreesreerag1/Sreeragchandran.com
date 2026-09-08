@@ -10,8 +10,6 @@ const DARK_INTRO_VIDEO_URL = '/videos/creature.mp4?v=3';
 const LIGHT_HERO_VIDEO_URL = '/videos/Hero_White.mp4?v=5';
 const LIGHT_INTRO_VIDEO_URL = '/videos/creature_White.mp4?v=3';
 
-const DARK_HERO_POSTER = '/videos/hero-poster.jpg';
-
 const SERVICES = [
   '/ CREATIVE DIRECTION',
   '/ BRAND IDENTITY & CAMPAIGNS',
@@ -115,15 +113,15 @@ export const HeroSection: React.FC = () => {
   const isLightIntroSeekingRef = useRef(false);
   const lastLightIntroSeekTimeRef = useRef(0);
 
-  // Hero Interaction State Machine (Direct Frame Continuation):
-  // HOVER_ACTIVE | RESETTING_TO_START | SCROLL_ACTIVE | RETURNING_TO_HOVER
+  // Hero Video Control State Machine:
+  // HOVER_VIDEO_ACTIVE | VIDEO_HANDOFF | SCROLL_VIDEO_ACTIVE | RETURN_TO_HOVER
   type HeroState =
-    | 'HOVER_ACTIVE'
-    | 'RESETTING_TO_START'
-    | 'SCROLL_ACTIVE'
-    | 'RETURNING_TO_HOVER';
+    | 'HOVER_VIDEO_ACTIVE'
+    | 'VIDEO_HANDOFF'
+    | 'SCROLL_VIDEO_ACTIVE'
+    | 'RETURN_TO_HOVER';
 
-  const heroStateRef = useRef<HeroState>('HOVER_ACTIVE');
+  const heroStateRef = useRef<HeroState>('HOVER_VIDEO_ACTIVE');
   const rewindStartProgressRef = useRef(0);
   const rewindStartTimeRef = useRef(0);
   const rewindDurationRef = useRef(350);
@@ -237,29 +235,7 @@ export const HeroSection: React.FC = () => {
     }
   }, []);
 
-  // Helper to prime canvas with poster artwork so it is never blank/black
-  const drawPosterOnCanvas = (canvas: HTMLCanvasElement | null, posterUrl: string) => {
-    if (!canvas || canvas.width <= 0 || canvas.height <= 0) return;
-    const img = new Image();
-    img.src = posterUrl;
-    img.onload = () => {
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        const bounds = calculateDrawBounds(
-          canvas.width,
-          canvas.height,
-          img.naturalWidth || 1280,
-          img.naturalHeight || 720
-        );
-        ctx.drawImage(img, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-      }
-    };
-  };
-
-  // Resize canvas to match container or window with DPR cap of 2 and prime with poster artwork
+  // Resize canvas to match container or window with DPR cap of 2
   const handleResize = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const parent = containerRef.current?.querySelector('.sticky');
@@ -276,10 +252,6 @@ export const HeroSection: React.FC = () => {
     lastDrawnLightHeroFrameRef.current = -1;
     lastDrawnDarkIntroFrameRef.current = -1;
     lastDrawnLightIntroFrameRef.current = -1;
-
-    // Immediately prime dark canvases with high-res poster artwork
-    drawPosterOnCanvas(introCanvasDarkRef.current, '/videos/creature-poster.jpg');
-    drawPosterOnCanvas(heroCanvasDarkRef.current, DARK_HERO_POSTER);
   };
 
   // Synchronous pre-paint resize to eliminate video and canvas stretching during initial load
@@ -361,7 +333,7 @@ export const HeroSection: React.FC = () => {
     const tiltNorm = 0.5 - clampedRoll / (maxRoll * 2.0);
     const clampedTilt = Math.max(0, Math.min(1, tiltNorm));
     latestMouseProgressRef.current = clampedTilt;
-    if (heroStateRef.current === 'HOVER_ACTIVE') {
+    if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
       introTargetProgressRef.current = clampedTilt;
     }
   }, []);
@@ -407,7 +379,7 @@ export const HeroSection: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       const xNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
       latestMouseProgressRef.current = xNorm;
-      if (heroStateRef.current === 'HOVER_ACTIVE') {
+      if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
         introTargetProgressRef.current = xNorm;
       }
     };
@@ -418,7 +390,7 @@ export const HeroSection: React.FC = () => {
       if (e.touches && e.touches.length > 0) {
         const xNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
         latestMouseProgressRef.current = xNorm;
-        if (heroStateRef.current === 'HOVER_ACTIVE') {
+        if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
           introTargetProgressRef.current = xNorm;
         }
       }
@@ -700,12 +672,12 @@ export const HeroSection: React.FC = () => {
       //    from Frame 0% to current cursor position, then restores HOVER_ACTIVE.
       // =======================================================================
 
-      if (heroStateRef.current === 'HOVER_ACTIVE') {
+      if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
         if (rawScroll > 4) {
           // 1. Detect the current frame position of VIDEO 01
           // 2. Freeze the current hover-controlled frame
-          // 3. Move VIDEO 01 rapidly back to frame 0
-          heroStateRef.current = 'RESETTING_TO_START';
+          // 3. Move VIDEO 01 rapidly back to matching frame 0
+          heroStateRef.current = 'VIDEO_HANDOFF';
           rewindStartProgressRef.current = introSmoothedProgressRef.current;
           rewindStartTimeRef.current = now;
           const dist = Math.abs(rewindStartProgressRef.current);
@@ -720,8 +692,8 @@ export const HeroSection: React.FC = () => {
             introSmoothedProgressRef.current = introTargetProgressRef.current;
           }
         }
-      } else if (heroStateRef.current === 'RESETTING_TO_START') {
-        // Hold scroll locked at 0 during rewind so VIDEO 02 stays at frame 0
+      } else if (heroStateRef.current === 'VIDEO_HANDOFF') {
+        // Hold scroll locked at 0 during handoff transition so VIDEO 02 stays at matching frame 0
         smoothedScrollYRef.current = 0;
 
         const elapsed = now - rewindStartTimeRef.current;
@@ -732,9 +704,9 @@ export const HeroSection: React.FC = () => {
         // Move VIDEO 01 rapidly back to frame 0
         introSmoothedProgressRef.current = rewindStartProgressRef.current * (1 - eased);
 
-        // If user cancelled scroll and returned to absolute top before reaching frame 0:
+        // Reversal interrupt: If user cancelled scroll and returned to absolute top before reaching frame 0:
         if (rawScroll <= 0 && progress < 1.0) {
-          heroStateRef.current = 'RETURNING_TO_HOVER';
+          heroStateRef.current = 'RETURN_TO_HOVER';
           returnStartTimeRef.current = now;
           returnTargetProgressRef.current = latestMouseProgressRef.current;
           const returnDist = Math.abs(returnTargetProgressRef.current - introSmoothedProgressRef.current);
@@ -756,12 +728,12 @@ export const HeroSection: React.FC = () => {
           lastDrawnLightHeroFrameRef.current = -1;
 
           // Immediately switch control to VIDEO 02 in the exact same animation frame
-          heroStateRef.current = 'SCROLL_ACTIVE';
+          heroStateRef.current = 'SCROLL_VIDEO_ACTIVE';
           if (introContainerRef.current) {
             introContainerRef.current.style.visibility = 'hidden';
           }
         }
-      } else if (heroStateRef.current === 'SCROLL_ACTIVE') {
+      } else if (heroStateRef.current === 'SCROLL_VIDEO_ACTIVE') {
         // Page scroll directly scrubs VIDEO 02 timeline smoothly
         const targetScroll = rawScrollYRef.current;
         const scrollDelta = targetScroll - smoothedScrollYRef.current;
@@ -776,7 +748,7 @@ export const HeroSection: React.FC = () => {
         if (rawScroll <= 0 && smoothedScrollYRef.current <= 2) {
           smoothedScrollYRef.current = 0;
 
-          // Synchronize: both videos at currentTime 0
+          // Synchronize: both videos at matching frame (currentTime: 0)
           if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0);
           if (videoLightRef.current) safeSeek(videoLightRef.current, 0);
           if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0);
@@ -786,7 +758,7 @@ export const HeroSection: React.FC = () => {
           lastDrawnDarkIntroFrameRef.current = -1; // force canvas to draw frame 0
 
           // Immediately activate VIDEO 01 in the exact same animation frame
-          heroStateRef.current = 'RETURNING_TO_HOVER';
+          heroStateRef.current = 'RETURN_TO_HOVER';
           if (introContainerRef.current) {
             introContainerRef.current.style.visibility = 'visible';
           }
@@ -798,12 +770,12 @@ export const HeroSection: React.FC = () => {
           const returnDist = Math.abs(returnTargetProgressRef.current);
           returnDurationRef.current = Math.round(180 + Math.max(0.1, returnDist) * 220);
         }
-      } else if (heroStateRef.current === 'RETURNING_TO_HOVER') {
+      } else if (heroStateRef.current === 'RETURN_TO_HOVER') {
         smoothedScrollYRef.current = 0;
 
         // Downward interrupt: if user starts scrolling down again during return
         if (rawScroll > 4) {
-          heroStateRef.current = 'RESETTING_TO_START';
+          heroStateRef.current = 'VIDEO_HANDOFF';
           rewindStartProgressRef.current = introSmoothedProgressRef.current;
           rewindStartTimeRef.current = now;
           const dist = Math.abs(rewindStartProgressRef.current);
@@ -821,10 +793,10 @@ export const HeroSection: React.FC = () => {
           introSmoothedProgressRef.current = target * eased;
 
           if (progress >= 1.0) {
-            // Once VIDEO 01 reaches the correct cursor frame: enable normal mouse hover scrubbing
+            // Once VIDEO 01 reaches the correct cursor frame: restore hover control
             introSmoothedProgressRef.current = target;
             introTargetProgressRef.current = target;
-            heroStateRef.current = 'HOVER_ACTIVE';
+            heroStateRef.current = 'HOVER_VIDEO_ACTIVE';
           }
         }
       }
@@ -834,7 +806,7 @@ export const HeroSection: React.FC = () => {
       // =======================================================================
       // LAYER VISIBILITY (ZERO OPACITY MANIPULATION, NO BLENDING)
       // =======================================================================
-      if (heroStateRef.current === 'SCROLL_ACTIVE') {
+      if (heroStateRef.current === 'SCROLL_VIDEO_ACTIVE') {
         if (introVideoDarkRef.current && !introVideoDarkRef.current.paused) introVideoDarkRef.current.pause();
         if (introVideoLightRef.current && !introVideoLightRef.current.paused) introVideoLightRef.current.pause();
         if (introContainerRef.current) {
@@ -844,13 +816,13 @@ export const HeroSection: React.FC = () => {
       } else {
         if (introContainerRef.current) {
           introContainerRef.current.style.visibility = 'visible';
-          introContainerRef.current.style.pointerEvents = heroStateRef.current === 'HOVER_ACTIVE' ? 'auto' : 'none';
+          introContainerRef.current.style.pointerEvents = heroStateRef.current === 'HOVER_VIDEO_ACTIVE' ? 'auto' : 'none';
         }
       }
 
       // Top prompt visibility (only at top during hover)
       if (topPromptRef.current) {
-        const showTop = heroStateRef.current === 'HOVER_ACTIVE' && s <= 15;
+        const showTop = heroStateRef.current === 'HOVER_VIDEO_ACTIVE' && s <= 15;
         topPromptRef.current.style.opacity = showTop ? '1' : '0';
         topPromptRef.current.style.pointerEvents = showTop ? 'auto' : 'none';
       }
@@ -863,9 +835,9 @@ export const HeroSection: React.FC = () => {
 
       // =======================================================================
       // VIDEO 1 (CREATURE INTRO) EXPLORE / HOVER RENDERING
-      // Active whenever heroState is NOT SCROLL_ACTIVE
+      // Active whenever heroState is NOT SCROLL_VIDEO_ACTIVE
       // =======================================================================
-      if (heroStateRef.current !== 'SCROLL_ACTIVE') {
+      if (heroStateRef.current !== 'SCROLL_VIDEO_ACTIVE') {
         const introProgress = introSmoothedProgressRef.current;
 
         // Dark Creature:
@@ -959,7 +931,7 @@ export const HeroSection: React.FC = () => {
       // VIDEO 2 (HERO VIDEO) SCROLL SCRUBBING (0px -> 1550px)
       // Synchronized with exact smoothed scroll progress
       // =======================================================================
-      const heroProgress = heroStateRef.current === 'SCROLL_ACTIVE' ? Math.min(1.0, s / 1550) : 0;
+      const heroProgress = heroStateRef.current === 'SCROLL_VIDEO_ACTIVE' ? Math.min(1.0, s / 1550) : 0;
 
       // Dark Hero Video / Canvas:
       if (heroCanvasDarkRef.current && darkHeroFramesRef.current.length > 0) {
@@ -1248,16 +1220,9 @@ export const HeroSection: React.FC = () => {
                   className="absolute inset-0 transition-opacity duration-700 ease-in-out"
                   style={{ opacity: isDark ? 1 : 0 }}
                 >
-                  <img
-                    src={DARK_HERO_POSTER}
-                    alt=""
-                    className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none -z-10"
-                    style={{ aspectRatio: '16 / 9' }}
-                  />
                   <video
                     ref={videoDarkRef}
                     src={DARK_HERO_VIDEO_URL}
-                    poster={DARK_HERO_POSTER}
                     muted
                     playsInline
                     preload="auto"
@@ -1324,16 +1289,9 @@ export const HeroSection: React.FC = () => {
                   className="absolute inset-0 transition-opacity duration-700 ease-in-out"
                   style={{ opacity: isDark ? 1 : 0 }}
                 >
-                  <img
-                    src="/videos/creature-poster.jpg"
-                    alt=""
-                    className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none -z-10"
-                    style={{ aspectRatio: '16 / 9' }}
-                  />
                   <video
                     ref={introVideoDarkRef}
                     src={DARK_INTRO_VIDEO_URL}
-                    poster="/videos/creature-poster.jpg"
                     muted
                     playsInline
                     preload="auto"
