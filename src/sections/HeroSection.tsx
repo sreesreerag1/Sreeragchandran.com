@@ -60,6 +60,18 @@ const drawFrameToCanvas = (
   isDarkTheme: boolean
 ) => {
   if (!canvas || !frame) return;
+
+  // Auto-sync canvas internal resolution with CSS display dimensions to eliminate stretching in all viewports
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const clientW = canvas.clientWidth || window.innerWidth;
+  const clientH = canvas.clientHeight || window.innerHeight;
+  const expectedW = Math.round(clientW * dpr);
+  const expectedH = Math.round(clientH * dpr);
+  if (expectedW > 0 && expectedH > 0 && (canvas.width !== expectedW || canvas.height !== expectedH)) {
+    canvas.width = expectedW;
+    canvas.height = expectedH;
+  }
+
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   ctx.imageSmoothingEnabled = true;
@@ -284,7 +296,7 @@ export const HeroSection: React.FC = () => {
   }, []);
 
 
-  // Lean passive scroll listener strictly recording scroll position (zero DOM/React overhead)
+  // Lean passive scroll and resize listener strictly recording scroll and viewport changes
   useEffect(() => {
     const handleScroll = () => {
       const container = containerRef.current;
@@ -301,9 +313,19 @@ export const HeroSection: React.FC = () => {
     handleResize();
     handleScroll();
 
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+      ro = new ResizeObserver(() => {
+        handleResize();
+        handleScroll();
+      });
+      ro.observe(containerRef.current);
+    }
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      if (ro) ro.disconnect();
     };
   }, []);
 
@@ -682,7 +704,7 @@ export const HeroSection: React.FC = () => {
       // 1. Dark Creature Intro: High priority for immediate mouse hover / tilt response on landing
       await extractFrames(
         DARK_INTRO_VIDEO_URL,
-        isMobile ? 16 : 24,
+        isMobile ? 18 : 28,
         darkIntroFramesRef,
         darkIntroDurationRef,
         setIsDarkIntroFramesReady,
@@ -690,10 +712,10 @@ export const HeroSection: React.FC = () => {
       );
       if (!isMounted) return;
 
-      // 2. Dark Hero Video: 36 frames for buttery-smooth 60fps scroll scrubbing
+      // 2. Dark Hero Video: 48 frames for buttery-smooth 60fps/120fps scroll scrubbing
       await extractFrames(
         DARK_HERO_VIDEO_URL,
-        isMobile ? 24 : 36,
+        isMobile ? 32 : 48,
         darkHeroFramesRef,
         darkHeroDurationRef,
         setIsDarkHeroFramesReady,
@@ -708,7 +730,7 @@ export const HeroSection: React.FC = () => {
         if (!isMounted) return;
         extractFrames(
           LIGHT_INTRO_VIDEO_URL,
-          isMobile ? 12 : 20,
+          isMobile ? 14 : 22,
           lightIntroFramesRef,
           lightIntroDurationRef,
           setIsLightIntroFramesReady,
@@ -718,7 +740,7 @@ export const HeroSection: React.FC = () => {
           if (!isMounted) return;
           extractFrames(
             LIGHT_HERO_VIDEO_URL,
-            isMobile ? 18 : 28,
+            isMobile ? 24 : 36,
             lightHeroFramesRef,
             lightHeroDurationRef,
             setIsLightHeroFramesReady,
@@ -766,9 +788,10 @@ export const HeroSection: React.FC = () => {
           // Locked at top: only mouse movement controls VIDEO 01
           smoothedScrollYRef.current = 0;
           const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
-          const lerpFactor = Math.abs(diff) > 0.15 ? 0.38 : 0.26;
+          const absDiff = Math.abs(diff);
+          const lerpFactor = 0.22 + 0.14 * Math.min(1.0, absDiff / 0.3);
           introSmoothedProgressRef.current += diff * lerpFactor;
-          if (Math.abs(diff) < 0.0005) {
+          if (absDiff < 0.0002) {
             introSmoothedProgressRef.current = introTargetProgressRef.current;
           }
         }
@@ -821,13 +844,14 @@ export const HeroSection: React.FC = () => {
           }
         }
       } else if (heroStateRef.current === 'SCROLL_VIDEO_ACTIVE') {
-        // Page scroll directly scrubs VIDEO 02 timeline smoothly
+        // Continuous, silky smooth scroll scrub interpolation with natural inertia
         const targetScroll = rawScrollYRef.current;
         const scrollDelta = targetScroll - smoothedScrollYRef.current;
         const absDelta = Math.abs(scrollDelta);
-        const lerp = absDelta > 150 ? 0.45 : absDelta > 40 ? 0.36 : 0.28;
-        smoothedScrollYRef.current += scrollDelta * lerp;
-        if (absDelta < 0.2) {
+        // Continuous velocity-adaptive damping: smooth micro-scrolls and responsive fast scrubs
+        const lerpFactor = 0.16 + 0.12 * Math.min(1.0, absDelta / 250);
+        smoothedScrollYRef.current += scrollDelta * lerpFactor;
+        if (absDelta < 0.05) {
           smoothedScrollYRef.current = targetScroll;
         }
 
@@ -1265,15 +1289,13 @@ export const HeroSection: React.FC = () => {
                       if (e.currentTarget.duration) darkHeroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleDarkHeroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
                       isDarkHeroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
-                    style={{ aspectRatio: '16 / 9' }}
+                    style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
                   />
                   <canvas
                     ref={heroCanvasDarkRef}
-                    width={1920}
-                    height={1080}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
@@ -1296,15 +1318,13 @@ export const HeroSection: React.FC = () => {
                       if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleLightHeroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
                       isLightHeroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
-                    style={{ aspectRatio: '16 / 9' }}
+                    style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
                   />
                   <canvas
                     ref={heroCanvasLightRef}
-                    width={1920}
-                    height={1080}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
@@ -1331,15 +1351,13 @@ export const HeroSection: React.FC = () => {
                       if (e.currentTarget.duration) darkIntroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleDarkIntroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
                       isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
-                    style={{ aspectRatio: '16 / 9' }}
+                    style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
                   />
                   <canvas
                     ref={introCanvasDarkRef}
-                    width={1920}
-                    height={1080}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
@@ -1359,15 +1377,13 @@ export const HeroSection: React.FC = () => {
                       if (e.currentTarget.duration) lightIntroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleLightIntroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none ${
                       isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
-                    style={{ aspectRatio: '16 / 9' }}
+                    style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
                   />
                   <canvas
                     ref={introCanvasLightRef}
-                    width={1920}
-                    height={1080}
                     className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
