@@ -417,7 +417,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     const handleMouseMove = (e: MouseEvent) => {
       if (!isSiteLoadedRef.current) return;
       if (isMobileDevice()) return; // strictly desktop only
-      const norm = Math.max(0, Math.min(1, e.clientX / window.innerWidth));
+      const norm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
       latestMouseProgressRef.current = norm;
       if (heroStateRef.current === 'HOVER_ACTIVE') {
         introTargetProgressRef.current = norm;
