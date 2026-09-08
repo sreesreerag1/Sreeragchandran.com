@@ -5,138 +5,8 @@ import { Reveal } from '../components/Reveal';
 import { PORTFOLIO_PROJECTS, PortfolioProject } from '../data/portfolioProjects';
 import { ProjectCaseStudyModal } from '../components/ProjectCaseStudyModal';
 
-interface StickyProjectItem {
-  id: string;
-  number: string;
-  name: string;
-  category: string;
-  leftImageTop: string;
-  leftImageBottom: string;
-  rightImageLarge: string;
-}
-
-const STICKY_PROJECTS: StickyProjectItem[] = [
-  {
-    id: 'ai-71-launch',
-    number: '01',
-    name: 'AI 71 LAUNCH',
-    category: 'SPATIAL ARCHITECTURE / CREATIVE DIRECTION',
-    leftImageTop: '/images/projects-gallery/ai-71-launch/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/ai-71-launch/img-04.jpg',
-    rightImageLarge: '/images/projects-gallery/ai-71-launch/img-03.jpg',
-  },
-  {
-    id: 'a2rl-act-at',
-    number: '02',
-    name: 'A2RL ACT AT',
-    category: 'AUTONOMOUS MOTORSPORT / KINETIC ARCHITECTURE',
-    leftImageTop: '/images/projects-gallery/a2rl-act-at/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/a2rl-act-at/img-04.jpg',
-    rightImageLarge: '/images/projects-gallery/a2rl-act-at/img-05.jpg',
-  },
-  {
-    id: 'adib-effica',
-    number: '03',
-    name: 'ADIB EFFICA',
-    category: 'PLENARY SCENOGRAPHY / STAGE ARCHITECTURE',
-    leftImageTop: '/images/projects-gallery/adib-effica/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/adib-effica/img-04.jpg',
-    rightImageLarge: '/images/projects-gallery/adib-effica/img-03.jpg',
-  },
-  {
-    id: 'exhibition-stands',
-    number: '04',
-    name: 'EXHIBITION STANDS',
-    category: 'SPATIAL PAVILIONS / 3D EXHIBITION DESIGN',
-    leftImageTop: '/images/projects-gallery/exhibition-stands/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/exhibition-stands/img-02.jpg',
-    rightImageLarge: '/images/projects-gallery/exhibition-stands/img-04.jpg',
-  },
-  {
-    id: 'being-human-photo-exhibition',
-    number: '05',
-    name: 'BEING HUMAN PHOTO EXHIBITION',
-    category: 'FINE ART PORTRAITURE / CURATION & DIRECTION',
-    leftImageTop: '/images/projects-gallery/being-human-photo-exhibition/img-02.jpg',
-    leftImageBottom: '/images/projects-gallery/being-human-photo-exhibition/img-03.jpg',
-    rightImageLarge: '/images/projects-gallery/being-human-photo-exhibition/img-01.jpg',
-  },
-  {
-    id: 'ncema',
-    number: '06',
-    name: 'NCEMA',
-    category: 'GLOBAL SUMMIT / ARENA STAGE ARCHITECTURE',
-    leftImageTop: '/images/projects-gallery/ncema/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/ncema/img-02.jpg',
-    rightImageLarge: '/images/projects-gallery/ncema/img-09.jpg',
-  },
-  {
-    id: 'eduladder',
-    number: '07',
-    name: 'EDULADDER',
-    category: 'BRAND IDENTITY / TYPOGRAPHIC SYSTEMS',
-    leftImageTop: '/images/projects-gallery/eduladder/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/eduladder/img-03.jpg',
-    rightImageLarge: '/images/projects-gallery/eduladder/img-02.jpg',
-  },
-  {
-    id: 'rta-annual-gathering',
-    number: '08',
-    name: 'RTA ANNUAL GATHERING',
-    category: 'MONUMENTAL INSTALLATION / SCULPTURAL LED',
-    leftImageTop: '/images/projects-gallery/rta-annual-gathering/img-06.jpg',
-    leftImageBottom: '/images/projects-gallery/rta-annual-gathering/img-07.jpg',
-    rightImageLarge: '/images/projects-gallery/rta-annual-gathering/img-04.jpg',
-  },
-  {
-    id: 'tii-ai-summit',
-    number: '09',
-    name: 'TII AI SUMMIT',
-    category: 'TECH PLENARY / DIGITAL SCENOGRAPHY',
-    leftImageTop: '/images/projects-gallery/tii-ai-summit/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/tii-ai-summit/img-03.jpg',
-    rightImageLarge: '/images/projects-gallery/tii-ai-summit/img-04.jpg',
-  },
-  {
-    id: 'adib-national-day',
-    number: '10',
-    name: 'ADIB NATIONAL DAY',
-    category: 'CULTURAL ARCHITECTURE / EXPERIENTIAL PAVILION',
-    leftImageTop: '/images/projects-gallery/adib-national-day/img-02.jpg',
-    leftImageBottom: '/images/projects-gallery/adib-national-day/img-03.jpg',
-    rightImageLarge: '/images/projects-gallery/adib-national-day/img-01.jpg',
-  },
-  {
-    id: 'ncema-generation-readiness',
-    number: '11',
-    name: 'NCEMA GENERATION READINESS',
-    category: 'INTERACTIVE LEARNING / SPATIAL SCENOGRAPHY',
-    leftImageTop: '/images/projects-gallery/ncema-generation-readiness/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/ncema-generation-readiness/img-04.jpg',
-    rightImageLarge: '/images/projects-gallery/ncema-generation-readiness/img-06.jpg',
-  },
-  {
-    id: 'sef-2022',
-    number: '12',
-    name: 'SEF 2022',
-    category: 'FESTIVAL MASTERPLANNING / BIOPHILIC DESIGN',
-    leftImageTop: '/images/projects-gallery/sef-2022/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/sef-2022/img-06.jpg',
-    rightImageLarge: '/images/projects-gallery/sef-2022/img-11.jpg',
-  },
-  {
-    id: 'yfc-photo-campaign',
-    number: '13',
-    name: 'YFC PHOTO CAMPAIGN',
-    category: 'CAMPAIGN DIRECTION / VISUAL STORYTELLING',
-    leftImageTop: '/images/projects-gallery/yfc-photo-campaign/img-01.jpg',
-    leftImageBottom: '/images/projects-gallery/yfc-photo-campaign/img-03.jpg',
-    rightImageLarge: '/images/projects-gallery/yfc-photo-campaign/img-02.jpg',
-  },
-];
-
 interface StickyCardProps {
-  project: StickyProjectItem;
+  project: PortfolioProject;
   index: number;
   onOpenModal: (projectId: string) => void;
 }
@@ -149,12 +19,163 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
     offset: ['start end', 'start start'],
   });
 
-  // Calculate subtle scaling as cards stack across 13 items
+  // Calculate subtle scaling as cards stack across 15 items
   const scale = useTransform(
     scrollYProgress,
     [0, 1],
-    [0.94 + index * 0.004, 1]
+    [0.94 + index * 0.0035, 1]
   );
+
+  const isTopCard = index < 2;
+  const images = project.galleryImages;
+
+  const renderCardCollage = () => {
+    if (!images || images.length === 0) return null;
+
+    const primary = images[0];
+    const secondary = images[1];
+    const tertiary = images[2];
+    const moreCount = images.length > 3 ? images.length - 3 : 0;
+
+    // Case A: Square-dominant projects (e.g. ACTIVE & EARN, PHOTO CAMPAIGN)
+    const isSquareDominant = images.slice(0, 4).every((img) => img.orientation === 'square');
+    if (isSquareDominant && images.length >= 3) {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
+          {/* Left: Featured Large Square (6 cols) */}
+          <div className="lg:col-span-6 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
+            <img
+              src={primary.src}
+              alt={`${project.title} featured`}
+              loading={isTopCard ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={index === 0 ? 'high' : 'auto'}
+              className="w-full h-full object-contain filter brightness-[0.95] group-hover/card:scale-[1.02] transition-transform duration-700"
+            />
+          </div>
+
+          {/* Right: Supporting Grid of detail squares (6 cols) */}
+          <div className="hidden sm:grid lg:col-span-6 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
+            {images.slice(1, 5).map((img, i) => (
+              <div key={img.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
+                <img
+                  src={img.src}
+                  alt={`${project.title} detail ${i + 1}`}
+                  loading={isTopCard ? 'eager' : 'lazy'}
+                  decoding="async"
+                  className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+                />
+                {i === 3 && images.length > 5 && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+                    <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#F5F5F2] font-semibold">
+                      +{images.length - 5} MORE
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Case B: Portrait-rich projects (e.g. BEING HUMAN, SIP FRESH FEEL ALIVE, AI71 LAUNCH)
+    const hasPortraits = images.some((img) => img.orientation === 'portrait');
+    if (hasPortraits && images.length >= 2) {
+      const portraitImages = images.filter((img) => img.orientation === 'portrait');
+      const landscapeImages = images.filter((img) => img.orientation !== 'portrait');
+      const heroImg = landscapeImages.length > 0 ? landscapeImages[0] : primary;
+      const portraitsToDisplay = portraitImages.slice(0, 2);
+
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
+          {/* Left: 2 Paired Vertical Portraits (5 cols) */}
+          <div className="hidden sm:grid lg:col-span-5 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
+            {portraitsToDisplay.map((pImg, pIdx) => (
+              <div key={pImg.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
+                <img
+                  src={pImg.src}
+                  alt={`${project.title} portrait ${pIdx + 1}`}
+                  loading={isTopCard ? 'eager' : 'lazy'}
+                  decoding="async"
+                  className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Right: Key Hero Visual (7 cols) */}
+          <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
+            <img
+              src={heroImg.src}
+              alt={`${project.title} hero`}
+              loading={isTopCard ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={index === 0 ? 'high' : 'auto'}
+              className="w-full h-full object-contain filter brightness-[0.95] group-hover/card:scale-[1.02] transition-transform duration-700"
+            />
+            {moreCount > 0 && (
+              <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full pointer-events-none">
+                <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] text-[#C8C1B5]">
+                  +{moreCount} MORE SHOTS
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Case C: Standard Landscape-Dominant projects (Default editorial layout)
+    const leftTop = secondary || primary;
+    const leftBottom = tertiary || secondary || primary;
+    const rightHero = primary;
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
+        {/* Left: Two Stacked Images (5 cols) */}
+        <div className="hidden sm:grid lg:col-span-5 grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
+          <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
+            <img
+              src={leftTop.src}
+              alt={`${project.title} detail 1`}
+              loading={isTopCard ? 'eager' : 'lazy'}
+              decoding="async"
+              className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+            />
+          </div>
+          <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
+            <img
+              src={leftBottom.src}
+              alt={`${project.title} detail 2`}
+              loading={isTopCard ? 'eager' : 'lazy'}
+              decoding="async"
+              className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+            />
+            {moreCount > 0 && (
+              <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full pointer-events-none">
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#C8C1B5] font-medium">
+                  +{moreCount} MORE SHOTS
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: One Large Hero Image (7 cols) */}
+        <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
+          <img
+            src={rightHero.src}
+            alt={`${project.title} hero`}
+            loading={isTopCard ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchPriority={index === 0 ? 'high' : 'auto'}
+            className="w-full h-full object-contain filter brightness-[0.95] group-hover/card:scale-[1.02] transition-transform duration-700"
+          />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -166,84 +187,75 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
     >
       <motion.div
         style={{ scale }}
-        onClick={() => onOpenModal(project.id)}
+        onClick={() => onOpenModal(project.slug)}
         data-cursor="project"
         data-cursor-text="VIEW"
         className="group/card cursor-pointer relative w-full h-[85vh] min-h-[560px] max-h-[860px] rounded-3xl md:rounded-[36px] bg-[#0c0c0c] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl overflow-hidden flex flex-col p-5 sm:p-7 md:p-10 transition-all duration-500"
       >
         {/* Card Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 md:pb-7 border-b border-white/[0.15] shrink-0">
-          <div className="flex items-baseline gap-4 sm:gap-6">
-            <span className="font-kanit text-2xl sm:text-3xl md:text-4xl font-light text-white/[0.2]">
-              {project.number}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 md:pb-6 border-b border-white/[0.15] shrink-0">
+          {/* LEFT: Project Number + TITLE + SUBHEADING */}
+          <div className="flex items-baseline gap-4 sm:gap-6 min-w-0">
+            <span className="font-kanit text-2xl sm:text-3xl md:text-4xl font-light text-white/[0.2] shrink-0">
+              {String(index + 1).padStart(2, '0')}
             </span>
-            <div>
-              <h3 className="font-kanit font-medium text-xl sm:text-2xl md:text-3xl tracking-tight uppercase text-[#F5F5F2] group-hover/card:text-[#C8C1B5] transition-colors">
-                {project.name}
+            <div className="min-w-0">
+              <h3 className="font-kanit font-medium text-xl sm:text-2xl md:text-3xl tracking-tight uppercase text-[#F5F5F2] group-hover/card:text-[#C8C1B5] transition-colors truncate">
+                {project.title}
               </h3>
-              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[#A6A6A6] block mt-0.5">
-                {project.category}
-              </span>
+              {project.subtitle && (
+                <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[#A6A6A6] block mt-0.5 truncate">
+                  {project.subtitle}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* View Project Button */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenModal(project.id);
-            }}
-            data-cursor="project"
-            data-cursor-text="VIEW"
-            className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium tracking-[0.1em] uppercase text-[#F5F5F2] transition-all duration-300 w-fit shrink-0 backdrop-blur-md"
-          >
-            <span>View Project</span>
-            <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110" />
-          </button>
-        </div>
+          {/* RIGHT: COPYRIGHT NOTE + VIEW PROJECT BUTTON */}
+          <div className="flex items-center gap-4 sm:gap-6 justify-between sm:justify-end shrink-0">
+            {project.copyright && (
+              <p
+                className="hidden md:block text-[#A6A6A6] font-sans text-right select-none leading-snug"
+                style={{
+                  fontSize: 'clamp(9px, 0.65vw, 11px)',
+                  opacity: 0.55,
+                  maxWidth: '320px',
+                }}
+              >
+                {project.copyright}
+              </p>
+            )}
 
-        {/* Card Body: Image Layout: Left 2 stacked images, Right 1 large image */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
-          {/* Left: Two Stacked Images (5 cols) */}
-          <div className="hidden sm:grid lg:col-span-5 grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
-            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-black/40">
-              <img
-                src={project.leftImageTop}
-                alt={`${project.name} detail 1`}
-                loading={index < 2 ? 'eager' : 'lazy'}
-                decoding="async"
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                className="w-full h-full object-cover filter brightness-[0.9] group-hover/card:scale-105 transition-transform duration-700"
-              />
-            </div>
-            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-black/40">
-              <img
-                src={project.leftImageBottom}
-                alt={`${project.name} detail 2`}
-                loading={index < 2 ? 'eager' : 'lazy'}
-                decoding="async"
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                className="w-full h-full object-cover filter brightness-[0.9] group-hover/card:scale-105 transition-transform duration-700"
-              />
-            </div>
-          </div>
-
-          {/* Right: One Large Image (7 cols) */}
-          <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-black/40">
-            <img
-              src={project.rightImageLarge}
-              alt={`${project.name} hero`}
-              loading={index < 2 ? 'eager' : 'lazy'}
-              decoding="async"
-              fetchPriority={index === 0 ? 'high' : 'auto'}
-              className="w-full h-full object-cover filter brightness-[0.95] group-hover/card:scale-105 transition-transform duration-700"
-            />
-
-            {/* Vignette Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenModal(project.slug);
+              }}
+              data-cursor="project"
+              data-cursor-text="VIEW"
+              className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] hover:bg-[#F5F5F2] hover:text-[#050505] px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium tracking-[0.1em] uppercase text-[#F5F5F2] transition-all duration-300 w-fit shrink-0 backdrop-blur-md"
+            >
+              <span>View Project</span>
+              <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110" />
+            </button>
           </div>
         </div>
+
+        {/* Mobile copyright notice */}
+        {project.copyright && (
+          <div className="md:hidden pt-2">
+            <p
+              className="text-[#A6A6A6] font-sans text-[9px] leading-tight select-none opacity-55 text-left"
+              style={{ maxWidth: '340px' }}
+            >
+              {project.copyright}
+            </p>
+          </div>
+        )}
+
+        {/* Card Body: Dynamic Aspect-Ratio Aware Editorial Collage */}
+        {renderCardCollage()}
       </motion.div>
     </div>
   );
@@ -253,7 +265,7 @@ export const ProjectsDarkSection: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);
 
   const handleOpenModal = (projectId: string) => {
-    const project = PORTFOLIO_PROJECTS.find((p) => p.slug === projectId);
+    const project = PORTFOLIO_PROJECTS.find((p) => p.slug === projectId || p.id === projectId);
     if (project) {
       setSelectedProject(project);
     }
@@ -289,7 +301,7 @@ export const ProjectsDarkSection: React.FC = () => {
 
         {/* Sticky Stacking Cards Container */}
         <div className="relative w-full">
-          {STICKY_PROJECTS.map((project, idx) => (
+          {PORTFOLIO_PROJECTS.map((project, idx) => (
             <StickyCard
               key={project.id}
               project={project}

@@ -3,8 +3,8 @@ import { Reveal } from '../components/Reveal';
 import { PORTFOLIO_PROJECTS, PortfolioProject } from '../data/portfolioProjects';
 import { ProjectCaseStudyModal } from '../components/ProjectCaseStudyModal';
 
-const ROW_1_CARDS: PortfolioProject[] = PORTFOLIO_PROJECTS.slice(0, 7);
-const ROW_2_CARDS: PortfolioProject[] = PORTFOLIO_PROJECTS.slice(7);
+const ROW_1_CARDS: PortfolioProject[] = PORTFOLIO_PROJECTS.slice(0, 8);
+const ROW_2_CARDS: PortfolioProject[] = PORTFOLIO_PROJECTS.slice(8);
 
 export const MarqueeGallery: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);
@@ -124,13 +124,15 @@ export const MarqueeGallery: React.FC = () => {
                 className="group relative w-[320px] sm:w-[380px] md:w-[420px] h-[200px] sm:h-[240px] md:h-[270px] rounded-2xl overflow-hidden bg-[#0B0B0B] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl shrink-0 cursor-pointer transition-all duration-500 hover:-translate-y-1 text-left"
                 aria-label={`Open case study for ${item.title}`}
               >
-                {/* Background Image */}
-                <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] filter brightness-[0.88] group-hover:brightness-100"
-                />
+                {/* Background Image - Uncropped contain */}
+                <div className="w-full h-full flex items-center justify-center bg-[#070707] p-2">
+                  <img
+                    src={item.thumbnail}
+                    alt={`${item.title} - ${item.subtitle}`}
+                    loading="lazy"
+                    className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02] filter brightness-[0.92] group-hover:brightness-100"
+                  />
+                </div>
 
                 {/* Subtle gradient behind text for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/95 via-black/35 to-transparent pointer-events-none" />
@@ -138,10 +140,18 @@ export const MarqueeGallery: React.FC = () => {
                 {/* Card Content Overlay - Minimal Visual Project Tile */}
                 <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end text-white pointer-events-none">
                   <div className="flex items-end justify-between gap-3">
-                    {/* Project Title: Bottom left, uppercase, elegant letter spacing, editorial feel */}
-                    <h3 className="font-kanit font-medium text-sm sm:text-base md:text-lg uppercase tracking-wider text-[#F5F5F2] leading-snug">
-                      {item.title}
-                    </h3>
+                    <div className="flex flex-col min-w-0 pr-2">
+                      {/* Project Title: Primary typography */}
+                      <h3 className="font-kanit font-medium text-sm sm:text-base md:text-lg uppercase tracking-wider text-[#F5F5F2] leading-snug truncate">
+                        {item.title}
+                      </h3>
+                      {/* Project Subheading: Smaller secondary typography */}
+                      {item.subtitle && (
+                        <span className="font-sans text-[11px] sm:text-xs text-[#A6A6A6] tracking-wide mt-0.5 truncate font-normal">
+                          {item.subtitle}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Minimal hover indicator: VIEW PROJECT → (only shown on hover) */}
                     <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-1 group-hover:translate-x-0 shrink-0">
@@ -173,13 +183,15 @@ export const MarqueeGallery: React.FC = () => {
                 className="group relative w-[320px] sm:w-[380px] md:w-[420px] h-[200px] sm:h-[240px] md:h-[270px] rounded-2xl overflow-hidden bg-[#0B0B0B] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl shrink-0 cursor-pointer transition-all duration-500 hover:-translate-y-1 text-left"
                 aria-label={`Open case study for ${item.title}`}
               >
-                {/* Background Image */}
-                <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] filter brightness-[0.88] group-hover:brightness-100"
-                />
+                {/* Background Image - Uncropped contain */}
+                <div className="w-full h-full flex items-center justify-center bg-[#070707] p-2">
+                  <img
+                    src={item.thumbnail}
+                    alt={`${item.title} - ${item.subtitle}`}
+                    loading="lazy"
+                    className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02] filter brightness-[0.92] group-hover:brightness-100"
+                  />
+                </div>
 
                 {/* Subtle gradient behind text for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/95 via-black/35 to-transparent pointer-events-none" />
@@ -187,10 +199,18 @@ export const MarqueeGallery: React.FC = () => {
                 {/* Card Content Overlay - Minimal Visual Project Tile */}
                 <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end text-white pointer-events-none">
                   <div className="flex items-end justify-between gap-3">
-                    {/* Project Title: Bottom left, uppercase, elegant letter spacing, editorial feel */}
-                    <h3 className="font-kanit font-medium text-sm sm:text-base md:text-lg uppercase tracking-wider text-[#F5F5F2] leading-snug">
-                      {item.title}
-                    </h3>
+                    <div className="flex flex-col min-w-0 pr-2">
+                      {/* Project Title: Primary typography */}
+                      <h3 className="font-kanit font-medium text-sm sm:text-base md:text-lg uppercase tracking-wider text-[#F5F5F2] leading-snug truncate">
+                        {item.title}
+                      </h3>
+                      {/* Project Subheading: Smaller secondary typography */}
+                      {item.subtitle && (
+                        <span className="font-sans text-[11px] sm:text-xs text-[#A6A6A6] tracking-wide mt-0.5 truncate font-normal">
+                          {item.subtitle}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Minimal hover indicator: VIEW PROJECT → (only shown on hover) */}
                     <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-1 group-hover:translate-x-0 shrink-0">
