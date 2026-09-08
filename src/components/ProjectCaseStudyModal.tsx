@@ -56,7 +56,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
   const heroImage = project.galleryImages[0];
   const remainingImages = project.galleryImages.slice(1);
 
-  // Helper to render uncropped gallery images with editorial rhythm
+  // Helper to render uncropped gallery images with full-screen editorial rhythm
   const renderEditorialGallery = (images: ProjectImageItem[]) => {
     const elements: React.ReactNode[] = [];
     let i = 0;
@@ -69,13 +69,13 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
       if (!next || current.aspectRatio > 1.8) {
         elements.push(
           <div key={current.id} className="col-span-12 w-full">
-            <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-[#080808] shadow-2xl flex items-center justify-center p-2 sm:p-4 group">
+            <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-[#080808] shadow-2xl flex items-center justify-center p-2 sm:p-4 md:p-6 group">
               <img
                 src={current.src}
                 alt={`${project.title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[85vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[92vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -84,7 +84,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         continue;
       }
 
-      // If both are portraits: 2-column balanced layout with uncropped contain
+      // If both are portraits: 2-column balanced layout filling full width uncropped
       if (current.orientation === 'portrait' && next.orientation === 'portrait') {
         elements.push(
           <div key={`pair-${current.id}-${next.id}`} className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10 items-stretch">
@@ -94,7 +94,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 alt={`${project.title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[82vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
@@ -103,7 +103,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 alt={`${project.title} - ${next.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[82vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 alt={`${project.title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[80vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
             <div className="md:col-span-7 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
@@ -131,7 +131,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 alt={`${project.title} - ${next.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[80vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -149,7 +149,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 alt={`${project.title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[80vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
             <div className="md:col-span-5 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
@@ -158,7 +158,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                 alt={`${project.title} - ${next.filename}`}
                 loading="lazy"
                 decoding="async"
-                className="w-auto max-w-full max-h-[80vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -167,7 +167,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         continue;
       }
 
-      // Default pair: 2 columns uncropped
+      // Default pair: 2 equal or balanced columns taking full width
       const isEven = Math.floor(i / 2) % 2 === 0;
       const leftCol = isEven ? 'md:col-span-7' : 'md:col-span-5';
       const rightCol = isEven ? 'md:col-span-5' : 'md:col-span-7';
@@ -180,7 +180,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
               alt={`${project.title} - ${current.filename}`}
               loading="lazy"
               decoding="async"
-              className="w-auto max-w-full max-h-[80vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+              className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
             />
           </div>
           <div className={`${rightCol} w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group`}>
@@ -189,7 +189,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
               alt={`${project.title} - ${next.filename}`}
               loading="lazy"
               decoding="async"
-              className="w-auto max-w-full max-h-[80vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+              className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
             />
           </div>
         </div>
@@ -207,29 +207,26 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed inset-0 z-50 flex flex-col bg-[#050505]/98 backdrop-blur-2xl text-white"
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-0 z-50 flex flex-col bg-[#050505] text-white overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-project-title"
       >
-        {/* Always Floating Persistent Close Button */}
-        <div className="fixed top-3.5 right-4 sm:top-4 sm:right-6 md:top-5 md:right-8 z-[70] pointer-events-auto">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close project modal and go back"
-            className="group flex items-center gap-2 rounded-full border border-white/30 bg-[#0a0a0a]/90 hover:bg-[#F5F5F2] hover:text-[#050505] text-[#F5F5F2] backdrop-blur-xl px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-[13px] font-mono tracking-[0.18em] uppercase font-semibold transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.85)] hover:shadow-[0_12px_36px_rgba(255,255,255,0.25)] hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
-            <span>CLOSE</span>
-            <X className="w-3.5 h-3.5 opacity-75 transition-transform duration-200 group-hover:rotate-90" />
-          </button>
-        </div>
+        {/* ALWAYS-FLOATING PROMINENT CLOSE BUTTON */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close modal and return to works"
+          className="fixed top-4 right-4 sm:top-5 sm:right-7 md:top-6 md:right-10 z-[100] flex items-center gap-2.5 rounded-full bg-white text-black hover:bg-[#EAEAEA] active:scale-95 px-5 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase font-bold shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_25px_rgba(255,255,255,0.25)] transition-all duration-200 cursor-pointer pointer-events-auto hover:scale-105"
+        >
+          <X className="w-4 h-4 stroke-[2.5]" />
+          <span>CLOSE</span>
+        </button>
 
-        {/* Sticky Header */}
-        <header className="sticky top-0 z-40 w-full bg-[#050505]/95 backdrop-blur-xl border-b border-white/15 px-5 sm:px-8 md:px-14 lg:px-16 py-4 sm:py-5 transition-all shadow-xl">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pr-24 sm:pr-32">
+        {/* Sticky Header - Full Screen Width */}
+        <header className="sticky top-0 z-40 w-full bg-[#050505]/95 backdrop-blur-xl border-b border-white/15 px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-4 sm:py-5 transition-all shadow-xl">
+          <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pr-32 sm:pr-44">
             {/* LEFT: TITLE + SUBHEADING */}
             <div className="flex flex-col min-w-0 pr-4">
               <h2
@@ -245,9 +242,9 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
               )}
             </div>
 
-            {/* RIGHT: COPYRIGHT NOTE */}
+            {/* RIGHT: COPYRIGHT ATTRIBUTION */}
             {project.copyright && (
-              <div className="shrink-0 max-w-sm">
+              <div className="shrink-0 max-w-sm md:max-w-md">
                 <p
                   className="text-white/60 font-sans text-left md:text-right select-none leading-snug"
                   style={{
@@ -261,17 +258,17 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
           </div>
         </header>
 
-        {/* Scrollable Body */}
+        {/* Scrollable Body - Full Screen Width */}
         <motion.div
           ref={scrollContainerRef}
           initial={{ opacity: 0, scale: 0.99 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.99 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth"
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth w-full"
         >
-          <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-14 lg:px-16 py-8 sm:py-12 md:py-16 flex flex-col gap-10 sm:gap-14 md:gap-20">
-            {/* 1. Large Hero Image (Uncropped, Full Visual) */}
+          <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-8 sm:py-12 md:py-16 flex flex-col gap-10 sm:gap-14 md:gap-20">
+            {/* 1. Large Hero Image (Full Width, Uncropped) */}
             {heroImage && (
               <section className="w-full">
                 <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-[#080808] shadow-2xl flex items-center justify-center p-2 sm:p-4 md:p-6">
@@ -280,13 +277,13 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
                     alt={`${project.title} - ${heroImage.filename}`}
                     loading="eager"
                     decoding="async"
-                    className="w-auto max-w-full max-h-[85vh] h-auto object-contain mx-auto"
+                    className="w-full max-h-[92vh] h-auto object-contain mx-auto"
                   />
                 </div>
               </section>
             )}
 
-            {/* 2. Editorial Gallery of all remaining non-thumbnail images (Uncropped) */}
+            {/* 2. Editorial Gallery of all remaining non-thumbnail images (Full Width, Uncropped) */}
             {remainingImages.length > 0 && (
               <section className="w-full flex flex-col gap-8 md:gap-12">
                 <div className="grid grid-cols-12 gap-6 sm:gap-8 md:gap-10 items-stretch">
@@ -295,16 +292,16 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
               </section>
             )}
 
-            {/* 3. Bottom Return to Works Button */}
-            <div className="w-full flex justify-center pt-6 pb-2">
+            {/* 3. Bottom Close & Return to Works Button */}
+            <div className="w-full flex justify-center pt-8 pb-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="group inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/10 hover:bg-[#F5F5F2] hover:text-[#050505] text-[#F5F5F2] px-8 py-3.5 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase font-medium transition-all duration-300 shadow-2xl active:scale-95 cursor-pointer"
+                className="group inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/10 hover:bg-white hover:text-black text-white px-8 py-4 text-xs sm:text-sm font-mono tracking-[0.2em] uppercase font-bold transition-all duration-300 shadow-2xl active:scale-95 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-1" />
                 <span>CLOSE & RETURN TO WORKS</span>
-                <X className="w-3.5 h-3.5 opacity-70 ml-1" />
+                <X className="w-4 h-4 opacity-70 ml-1" />
               </button>
             </div>
 
