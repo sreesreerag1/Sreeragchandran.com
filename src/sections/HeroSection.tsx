@@ -109,12 +109,7 @@ export const HeroSection: React.FC = () => {
   const isLightIntroSeekingRef = useRef(false);
   const lastLightIntroSeekTimeRef = useRef(0);
 
-  const introPhaseRef = useRef<'EXPLORE' | 'REWINDING' | 'HANDOFF' | 'COMPLETE'>('EXPLORE');
-  const rewindStartProgressRef = useRef(0.2);
-  const rewindStartTimeRef = useRef(0);
-  const rewindDurationRef = useRef(350);
-  const handoffStartTimeRef = useRef(0);
-  const isTransitionCompleteRef = useRef(false);
+  const introPhaseRef = useRef<'EXPLORE' | 'COMPLETE'>('EXPLORE');
 
   const introTargetProgressRef = useRef(0.5);
   const introSmoothedProgressRef = useRef(0.5);
@@ -219,7 +214,29 @@ export const HeroSection: React.FC = () => {
     }
   }, []);
 
-  // Resize canvas to match container or window with DPR cap of 2
+  // Helper to prime canvas with poster artwork so it is never blank/black
+  const drawPosterOnCanvas = (canvas: HTMLCanvasElement | null, posterUrl: string) => {
+    if (!canvas || canvas.width <= 0 || canvas.height <= 0) return;
+    const img = new Image();
+    img.src = posterUrl;
+    img.onload = () => {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        const bounds = calculateDrawBounds(
+          canvas.width,
+          canvas.height,
+          img.naturalWidth || 1280,
+          img.naturalHeight || 720
+        );
+        ctx.drawImage(img, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+      }
+    };
+  };
+
+  // Resize canvas to match container or window with DPR cap of 2 and prime with poster artwork
   const handleResize = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const parent = containerRef.current?.querySelector('.sticky');
@@ -236,6 +253,10 @@ export const HeroSection: React.FC = () => {
     lastDrawnLightHeroFrameRef.current = -1;
     lastDrawnDarkIntroFrameRef.current = -1;
     lastDrawnLightIntroFrameRef.current = -1;
+
+    // Immediately prime dark canvases with high-res poster artwork
+    drawPosterOnCanvas(introCanvasDarkRef.current, '/videos/creature-poster.jpg');
+    drawPosterOnCanvas(heroCanvasDarkRef.current, DARK_HERO_POSTER);
   };
 
   // Lean passive scroll listener strictly recording scroll position (zero DOM/React overhead)
@@ -437,7 +458,7 @@ export const HeroSection: React.FC = () => {
     setReady: (val: boolean) => void,
     isMounted: () => boolean
   ) => {
-    if (targetRef.current.length > 0) return;
+    if (targetRef.current.length >= targetFrames * 0.7) return;
     try {
       const offscreenVideo = document.createElement('video');
       offscreenVideo.muted = true;
@@ -517,29 +538,26 @@ export const HeroSection: React.FC = () => {
         if (ctx) {
           try {
             ctx.drawImage(offscreenVideo, 0, 0, targetWidth, targetHeight);
-            if ('createImageBitmap' in window) {
-              try {
-                const bmp = await createImageBitmap(extractCanvas);
-                extracted.push(bmp);
-              } catch {
-                const c = document.createElement('canvas');
-                c.width = targetWidth;
-                c.height = targetHeight;
-                c.getContext('2d')?.drawImage(extractCanvas, 0, 0);
-                extracted.push(c);
-              }
-            } else {
-              const c = document.createElement('canvas');
-              c.width = targetWidth;
-              c.height = targetHeight;
-              c.getContext('2d')?.drawImage(extractCanvas, 0, 0);
+            // Persistent canvas elements: immune to ImageBitmap invalidation, survives React StrictMode & HMR
+            const c = document.createElement('canvas');
+            c.width = targetWidth;
+            c.height = targetHeight;
+            const cCtx = c.getContext('2d');
+            if (cCtx) {
+              cCtx.drawImage(extractCanvas, 0, 0);
               extracted.push(c);
             }
           } catch {}
         }
 
-        // Progressive activation: enable canvas as soon as 8 frames are ready for immediate interactive response
-        if (isMounted() && extracted.length === 8) {
+        // Progressive activation:
+        // As soon as the very first frame is ready, activate so frame 0 is immediately painted onto the canvas
+        if (isMounted() && extracted.length === 1) {
+          targetRef.current = [...extracted];
+          setReady(true);
+          lastDrawnDarkHeroFrameRef.current = -1;
+          lastDrawnDarkIntroFrameRef.current = -1;
+        } else if (isMounted() && extracted.length % 4 === 0) {
           targetRef.current = [...extracted];
           setReady(true);
         }
@@ -554,80 +572,78 @@ export const HeroSection: React.FC = () => {
       }
 
       // Complete sequence assignment
-      if (isMounted() && extracted.length >= Math.floor(targetFrames * 0.7)) {
+      if (isMounted() && extracted.length > 0) {
         targetRef.current = extracted;
         setReady(true);
+        lastDrawnDarkHeroFrameRef.current = -1;
+        lastDrawnDarkIntroFrameRef.current = -1;
       }
     } catch (err) {
       console.warn('Frame cache extraction fallback to video scrub:', videoUrl, err);
     }
   };
 
-  // Preload and cache frames with prioritized Hero Video extraction
+  // Preload and cache frames with prioritized Creature Intro & Hero Video extraction
   useEffect(() => {
     let isMounted = true;
     const checkMounted = () => isMounted;
 
     const isMobile = isMobileDevice();
 
-    if (isMobile) {
-      // Mobile: Extract 24 frames of Dark Hero Video FIRST, so mobile scroll scrub is buttery 60fps!
-      extractFrames(DARK_HERO_VIDEO_URL, 24, darkHeroFramesRef, darkHeroDurationRef, setIsDarkHeroFramesReady, checkMounted);
-      // And extract 16 lightweight frames of Dark Creature for tilt
-      setTimeout(() => {
-        if (!isMounted) return;
-        extractFrames(DARK_INTRO_VIDEO_URL, 16, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
-      }, 600);
-
-      return () => {
-        isMounted = false;
-        darkHeroFramesRef.current.forEach((bmp) => {
-          if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-        });
-        darkIntroFramesRef.current.forEach((bmp) => {
-          if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-        });
-      };
-    }
-
-    // On Desktop:
-    const startDesktopExtraction = async () => {
-      // 1. Dark Hero Video: Highest priority! Scrub layer as soon as user scrolls
-      await extractFrames(DARK_HERO_VIDEO_URL, 36, darkHeroFramesRef, darkHeroDurationRef, setIsDarkHeroFramesReady, checkMounted);
+    const startExtraction = async () => {
+      // 1. Dark Creature Intro: High priority for immediate mouse hover / tilt response on landing
+      await extractFrames(
+        DARK_INTRO_VIDEO_URL,
+        isMobile ? 16 : 24,
+        darkIntroFramesRef,
+        darkIntroDurationRef,
+        setIsDarkIntroFramesReady,
+        checkMounted
+      );
       if (!isMounted) return;
 
-      // 2. Dark Creature Intro: 20 lightweight frames for mouse hover tracking
-      await extractFrames(DARK_INTRO_VIDEO_URL, 20, darkIntroFramesRef, darkIntroDurationRef, setIsDarkIntroFramesReady, checkMounted);
+      // 2. Dark Hero Video: 36 frames for buttery-smooth 60fps scroll scrubbing
+      await extractFrames(
+        DARK_HERO_VIDEO_URL,
+        isMobile ? 24 : 36,
+        darkHeroFramesRef,
+        darkHeroDurationRef,
+        setIsDarkHeroFramesReady,
+        checkMounted
+      );
       if (!isMounted) return;
 
-      // 3. Light Hero Video & Light Creature Intro: Deferred so they never block initial interaction
-      const idleCallback = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 4000));
+      // 3. Light Hero & Creature: Deferred in background for instant theme switching
+      const idleCallback =
+        (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 2500));
       idleCallback(() => {
         if (!isMounted) return;
-        extractFrames(LIGHT_HERO_VIDEO_URL, 36, lightHeroFramesRef, lightHeroDurationRef, setIsLightHeroFramesReady, checkMounted);
+        extractFrames(
+          LIGHT_INTRO_VIDEO_URL,
+          isMobile ? 12 : 20,
+          lightIntroFramesRef,
+          lightIntroDurationRef,
+          setIsLightIntroFramesReady,
+          checkMounted
+        );
         setTimeout(() => {
           if (!isMounted) return;
-          extractFrames(LIGHT_INTRO_VIDEO_URL, 20, lightIntroFramesRef, lightIntroDurationRef, setIsLightIntroFramesReady, checkMounted);
+          extractFrames(
+            LIGHT_HERO_VIDEO_URL,
+            isMobile ? 18 : 28,
+            lightHeroFramesRef,
+            lightHeroDurationRef,
+            setIsLightHeroFramesReady,
+            checkMounted
+          );
         }, 800);
       });
     };
 
-    startDesktopExtraction();
+    startExtraction();
 
     return () => {
       isMounted = false;
-      darkIntroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
-      lightIntroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
-      darkHeroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
-      lightHeroFramesRef.current.forEach((bmp) => {
-        if ('close' in bmp && typeof (bmp as any).close === 'function') (bmp as any).close();
-      });
     };
   }, []);
 
@@ -657,32 +673,40 @@ export const HeroSection: React.FC = () => {
       const s = smoothedScrollYRef.current;
 
       // =======================================================================
-      // VIDEO 1 (CREATURE INTRO) LIFECYCLE & VISIBILITY
+      // VIDEO 1 (CREATURE INTRO) TO VIDEO 2 (HERO) SEAMLESS CROSSFADE
       // =======================================================================
-      if (s > 4) {
+      const CROSSFADE_END = 180;
+
+      if (s <= 0) {
+        introPhaseRef.current = 'EXPLORE';
+        if (introContainerRef.current) {
+          introContainerRef.current.style.opacity = '1';
+          introContainerRef.current.style.visibility = 'visible';
+          introContainerRef.current.style.pointerEvents = 'auto';
+        }
+      } else if (s < CROSSFADE_END) {
+        // Smoothly dissolve creature hover video into hero scroll video
+        const introFade = 1 - smoothstep(0, CROSSFADE_END, s);
+        if (introContainerRef.current) {
+          introContainerRef.current.style.opacity = introFade.toFixed(3);
+          introContainerRef.current.style.visibility = 'visible';
+          introContainerRef.current.style.pointerEvents = 'none';
+        }
+        // Gently ease creature target toward center (0.5) to match hero starting pose
+        const centerFactor = Math.min(1.0, s / 80);
+        introTargetProgressRef.current =
+          introTargetProgressRef.current * (1 - centerFactor) + 0.5 * centerFactor;
+      } else {
+        // Fully past crossfade: hide creature container completely to free GPU
         if (introPhaseRef.current !== 'COMPLETE') {
           introPhaseRef.current = 'COMPLETE';
-          introSmoothedProgressRef.current = 0;
-          isTransitionCompleteRef.current = true;
           if (introVideoDarkRef.current) introVideoDarkRef.current.pause();
           if (introVideoLightRef.current) introVideoLightRef.current.pause();
-          if (introContainerRef.current) {
-            introContainerRef.current.style.opacity = '0';
-            introContainerRef.current.style.visibility = 'hidden';
-          }
         }
-      } else if (s <= 2) {
-        if (introPhaseRef.current === 'COMPLETE') {
-          introPhaseRef.current = 'EXPLORE';
-          isTransitionCompleteRef.current = false;
-          if (introContainerRef.current) {
-            introContainerRef.current.style.opacity = '1';
-            introContainerRef.current.style.visibility = 'visible';
-          }
-          if (isMobileDevice()) {
-            if (introVideoDarkRef.current && isDark) introVideoDarkRef.current.play().catch(() => {});
-            if (introVideoLightRef.current && !isDark) introVideoLightRef.current.play().catch(() => {});
-          }
+        if (introContainerRef.current) {
+          introContainerRef.current.style.opacity = '0';
+          introContainerRef.current.style.visibility = 'hidden';
+          introContainerRef.current.style.pointerEvents = 'none';
         }
       }
 
@@ -701,38 +725,14 @@ export const HeroSection: React.FC = () => {
 
       // =======================================================================
       // VIDEO 1 (CREATURE INTRO) EXPLORE / HOVER RENDERING
-      // Only runs when at the top (s <= 4)
+      // Runs while intro layer is visible (s < CROSSFADE_END)
       // =======================================================================
-      if (s <= 4) {
-        if (introPhaseRef.current === 'EXPLORE') {
-          const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
-          const lerpFactor = Math.abs(diff) > 0.15 ? 0.38 : 0.26;
-          introSmoothedProgressRef.current += diff * lerpFactor;
-          if (Math.abs(diff) < 0.0005) {
-            introSmoothedProgressRef.current = introTargetProgressRef.current;
-          }
-        } else if (introPhaseRef.current === 'REWINDING') {
-          const elapsed = now - rewindStartTimeRef.current;
-          const t = Math.min(1, elapsed / rewindDurationRef.current);
-          const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-          const currentRewind = rewindStartProgressRef.current * (1 - eased);
-          introSmoothedProgressRef.current = Math.max(0, currentRewind);
-
-          if (t >= 1) {
-            introSmoothedProgressRef.current = 0;
-            introPhaseRef.current = 'HANDOFF';
-            handoffStartTimeRef.current = now;
-          }
-        } else if (introPhaseRef.current === 'HANDOFF') {
-          introSmoothedProgressRef.current = 0;
-          if (now - handoffStartTimeRef.current >= 70) {
-            introPhaseRef.current = 'COMPLETE';
-            isTransitionCompleteRef.current = true;
-            if (introContainerRef.current) {
-              introContainerRef.current.style.opacity = '0';
-              introContainerRef.current.style.visibility = 'hidden';
-            }
-          }
+      if (s < CROSSFADE_END) {
+        const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
+        const lerpFactor = Math.abs(diff) > 0.15 ? 0.38 : 0.26;
+        introSmoothedProgressRef.current += diff * lerpFactor;
+        if (Math.abs(diff) < 0.0005) {
+          introSmoothedProgressRef.current = introTargetProgressRef.current;
         }
 
         const introProgress = introSmoothedProgressRef.current;
@@ -1117,6 +1117,11 @@ export const HeroSection: React.FC = () => {
                   className="absolute inset-0 transition-opacity duration-700 ease-in-out"
                   style={{ opacity: isDark ? 1 : 0 }}
                 >
+                  <img
+                    src={DARK_HERO_POSTER}
+                    alt=""
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none object-cover pointer-events-none -z-10"
+                  />
                   <video
                     ref={videoDarkRef}
                     src={DARK_HERO_VIDEO_URL}
@@ -1137,9 +1142,7 @@ export const HeroSection: React.FC = () => {
                   />
                   <canvas
                     ref={heroCanvasDarkRef}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
-                      isDarkHeroFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
 
@@ -1167,9 +1170,7 @@ export const HeroSection: React.FC = () => {
                   />
                   <canvas
                     ref={heroCanvasLightRef}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
-                      isLightHeroFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
               </div>
@@ -1177,17 +1178,23 @@ export const HeroSection: React.FC = () => {
               {/* Video 1 (Intro Hover Video Layer: Creature) */}
               <div
                 ref={introContainerRef}
-                className="absolute inset-0 z-[5] overflow-hidden pointer-events-none transition-opacity duration-250 ease-out"
-                style={{ opacity: 1 }}
+                className="absolute inset-0 z-[5] overflow-hidden pointer-events-none"
+                style={{ opacity: 1, visibility: 'visible' }}
               >
                 {/* Dark Creature Track */}
                 <div
                   className="absolute inset-0 transition-opacity duration-700 ease-in-out"
                   style={{ opacity: isDark ? 1 : 0 }}
                 >
+                  <img
+                    src="/videos/creature-poster.jpg"
+                    alt=""
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto max-w-none object-cover pointer-events-none -z-10"
+                  />
                   <video
                     ref={introVideoDarkRef}
                     src={DARK_INTRO_VIDEO_URL}
+                    poster="/videos/creature-poster.jpg"
                     muted
                     playsInline
                     preload="auto"
@@ -1201,9 +1208,7 @@ export const HeroSection: React.FC = () => {
                   />
                   <canvas
                     ref={introCanvasDarkRef}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
-                      isDarkIntroFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
 
@@ -1228,9 +1233,7 @@ export const HeroSection: React.FC = () => {
                   />
                   <canvas
                     ref={introCanvasLightRef}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
-                      isLightIntroFramesReady ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
                   />
                 </div>
               </div>
