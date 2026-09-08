@@ -100,7 +100,7 @@ const safeSeek = (v: HTMLVideoElement, time: number) => {
   if (v.seeking) return; // Prevent seek flooding while browser is already seeking
   const dur = v.duration;
   if (!dur || !isFinite(dur) || dur <= 0) return;
-  const clampedTime = Math.max(0.02, Math.min(dur - 0.18, time));
+  const clampedTime = Math.max(0.01, Math.min(dur - 0.02, time));
   if (Math.abs(v.currentTime - clampedTime) < 0.015) return; // Skip micro changes
   try {
     v.currentTime = clampedTime;
@@ -163,15 +163,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
   const isLightIntroSeekingRef = useRef(false);
   const lastLightIntroSeekTimeRef = useRef(0);
 
-  // Hero Video Control State Machine:
-  // HOVER_VIDEO_ACTIVE | VIDEO_HANDOFF | SCROLL_VIDEO_ACTIVE | RETURN_TO_HOVER
-  type HeroState =
-    | 'HOVER_VIDEO_ACTIVE'
-    | 'VIDEO_HANDOFF'
-    | 'SCROLL_VIDEO_ACTIVE'
-    | 'RETURN_TO_HOVER';
+  // Hero Video Control State Machine: HOVER_ACTIVE | SCROLL_ACTIVE | TRANSITIONING
+  type HeroState = 'HOVER_ACTIVE' | 'SCROLL_ACTIVE' | 'TRANSITIONING';
 
-  const heroStateRef = useRef<HeroState>('HOVER_VIDEO_ACTIVE');
+  const heroStateRef = useRef<HeroState>('HOVER_ACTIVE');
+  const transitionDirectionRef = useRef<'TO_SCROLL' | 'TO_HOVER'>('TO_SCROLL');
   const rewindStartProgressRef = useRef(0);
   const rewindStartTimeRef = useRef(0);
   const rewindDurationRef = useRef(350);
@@ -391,11 +387,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     // Map strictly left-to-right:
     // Tilting phone left  (rollDeg < 0) -> 1.0 (creature looks left)
     // Upright             (rollDeg = 0) -> 0.5 (creature looks center)
-    // Tilting phone right (rollDeg > 0) -> 0.0 (creature looks right)
-    const tiltNorm = 0.5 - clampedRoll / (maxRoll * 2.0);
+    // Tilting phone right (rollDeg > 0) -> creature looks right
+    const tiltNorm = 0.5 + clampedRoll / (maxRoll * 2.0);
     const clampedTilt = Math.max(0.001, Math.min(0.999, tiltNorm));
     latestMouseProgressRef.current = clampedTilt;
-    if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
+    if (heroStateRef.current === 'HOVER_ACTIVE') {
       introTargetProgressRef.current = clampedTilt;
     }
   }, []);
@@ -437,14 +433,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
 
   // Intro video controller: Mouse hover on Desktop, Device Motion (Gyroscope Tilt) on Mobile
   useEffect(() => {
-    // Desktop mouse hover controller
+    // Desktop mouse hover controller: mouseX / window.innerWidth (0 = first frame, 1 = last frame)
     const handleMouseMove = (e: MouseEvent) => {
       if (!isSiteLoadedRef.current) return;
-      const rawNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
-      const xNorm = Math.max(0.001, Math.min(0.999, rawNorm));
-      latestMouseProgressRef.current = xNorm;
-      if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
-        introTargetProgressRef.current = xNorm;
+      const norm = Math.max(0, Math.min(1, e.clientX / window.innerWidth));
+      latestMouseProgressRef.current = norm;
+      if (heroStateRef.current === 'HOVER_ACTIVE') {
+        introTargetProgressRef.current = norm;
       }
     };
 
@@ -453,11 +448,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       // If motion is actively streaming real tilt data, do not let touch drag conflict
       if (isMotionActiveRef.current) return;
       if (e.touches && e.touches.length > 0) {
-        const rawNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
-        const xNorm = Math.max(0.001, Math.min(0.999, rawNorm));
-        latestMouseProgressRef.current = xNorm;
-        if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
-          introTargetProgressRef.current = xNorm;
+        const norm = Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
+        latestMouseProgressRef.current = norm;
+        if (heroStateRef.current === 'HOVER_ACTIVE') {
+          introTargetProgressRef.current = norm;
         }
       }
     };
@@ -601,10 +595,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
         ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
       }
 
-      // Safe bounds: frame 0 starts at 0.03s (guaranteed forward seek from 0.0s),
-      // and frame N ends at duration - 0.20s (safely avoiding EOF buffer flush / black frames).
-      const safeStart = 0.03;
-      const safeEnd = Math.max(safeStart + 0.5, duration - 0.20);
+      // Safe bounds: frame 0 starts at 0.01s (guaranteed valid first frame),
+      // and frame N ends at duration - 0.02s (guaranteed final frame without EOF black flush).
+      const safeStart = 0.01;
+      const safeEnd = Math.max(safeStart + 0.5, duration - 0.02);
 
       const extracted: CanvasImageSource[] = [];
       for (let i = 0; i < targetFrames; i++) {
@@ -785,24 +779,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       const now = performance.now();
 
       // =======================================================================
-      // HERO INTERACTION STATE MACHINE (CINEMATIC SEAMLESS HANDOFF)
-      // 1. HOVER_ACTIVE: Mouse/gyro controls VIDEO 01 playback frame.
-      // 2. TRANSITION_TO_SCROLL: Fast cinematic rewind to Frame 0% (400–650ms easeInOutCubic).
-      // 3. SCROLL_ACTIVE: Seamless handoff to VIDEO 02 at Frame 0%. Page scroll controls scrubbing.
-      // 4. TRANSITION_TO_HOVER: Scroll reaches top (Frame 0%). VIDEO 01 smoothly catches up
-      //    from Frame 0% to current cursor position, then restores HOVER_ACTIVE.
+      // HERO INTERACTION STATE MACHINE (STRICT CONTROL PRIORITY & SEAMLESS HANDOFF)
+      // States: HOVER_ACTIVE | SCROLL_ACTIVE | TRANSITIONING
+      // Page load: Default state = HOVER_ACTIVE
       // =======================================================================
 
-      if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
+      if (heroStateRef.current === 'HOVER_ACTIVE') {
         if (rawScroll > 4) {
+          // Scroll begins:
           // 1. Detect the current frame position of VIDEO 01
           // 2. Freeze the current hover-controlled frame
-          // 3. Move VIDEO 01 rapidly back to matching frame 0
-          heroStateRef.current = 'VIDEO_HANDOFF';
+          // 3. Move VIDEO 01 rapidly back to frame 0 (disable hover, keep visible, don't switch yet)
+          heroStateRef.current = 'TRANSITIONING';
+          transitionDirectionRef.current = 'TO_SCROLL';
           rewindStartProgressRef.current = introSmoothedProgressRef.current;
           rewindStartTimeRef.current = now;
           const dist = Math.abs(rewindStartProgressRef.current);
-          rewindDurationRef.current = Math.round(110 + Math.max(0.1, dist) * 140);
+          rewindDurationRef.current = Math.round(140 + Math.max(0.1, dist) * 110);
         } else {
           // Locked at top: only mouse movement controls VIDEO 01
           smoothedScrollYRef.current = 0;
@@ -814,55 +807,83 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
             introSmoothedProgressRef.current = introTargetProgressRef.current;
           }
         }
-      } else if (heroStateRef.current === 'VIDEO_HANDOFF') {
-        // Hold scroll locked at 0 during handoff transition so VIDEO 02 stays at matching frame 0
+      } else if (heroStateRef.current === 'TRANSITIONING') {
+        // Hold scroll locked at 0 during transition so VIDEO 02 stays at matching frame 0
         smoothedScrollYRef.current = 0;
 
-        const elapsed = now - rewindStartTimeRef.current;
-        const duration = Math.max(80, rewindDurationRef.current);
-        const progress = Math.min(1.0, elapsed / duration);
-        const eased = easeInOutCubic(progress);
+        if (transitionDirectionRef.current === 'TO_SCROLL') {
+          // Rapid rewind back to frame 0
+          const elapsed = now - rewindStartTimeRef.current;
+          const duration = Math.max(80, rewindDurationRef.current);
+          const progress = Math.min(1.0, elapsed / duration);
+          const eased = easeInOutCubic(progress);
 
-        // Move VIDEO 01 rapidly back to frame 0
-        introSmoothedProgressRef.current = rewindStartProgressRef.current * (1 - eased);
+          introSmoothedProgressRef.current = rewindStartProgressRef.current * (1 - eased);
 
-        // Reversal interrupt: If user cancelled scroll and returned to absolute top before reaching frame 0:
-        if (rawScroll <= 0 && progress < 1.0) {
-          heroStateRef.current = 'RETURN_TO_HOVER';
-          returnStartTimeRef.current = now;
-          returnTargetProgressRef.current = latestMouseProgressRef.current;
-          const returnDist = Math.abs(returnTargetProgressRef.current - introSmoothedProgressRef.current);
-          returnDurationRef.current = Math.round(110 + Math.max(0.1, returnDist) * 140);
-        } else if (progress >= 1.0) {
-          // 4. When VIDEO 01 reaches exactly frame 0:
-          introSmoothedProgressRef.current = 0;
-          introTargetProgressRef.current = 0;
+          // Reversal interrupt: If user cancelled scroll and returned to absolute top before reaching frame 0:
+          if (rawScroll <= 0 && progress < 1.0) {
+            transitionDirectionRef.current = 'TO_HOVER';
+            returnStartTimeRef.current = now;
+            returnTargetProgressRef.current = latestMouseProgressRef.current;
+            const returnDist = Math.abs(returnTargetProgressRef.current - introSmoothedProgressRef.current);
+            returnDurationRef.current = Math.round(140 + Math.max(0.1, returnDist) * 110);
+          } else if (progress >= 1.0) {
+            // 4. When VIDEO 01 reaches exactly frame 0:
+            introSmoothedProgressRef.current = 0;
+            introTargetProgressRef.current = 0;
 
-          // Synchronize currentTime on both videos before switching (0.02s avoids keyframe stall)
-          if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0.02);
-          if (introVideoLightRef.current) safeSeek(introVideoLightRef.current, 0.02);
-          if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0.02);
-          if (videoLightRef.current) safeSeek(videoLightRef.current, 0.02);
+            // Synchronize currentTime on both videos before switching (0.02s avoids keyframe stall)
+            if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0.02);
+            if (introVideoLightRef.current) safeSeek(introVideoLightRef.current, 0.02);
+            if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0.02);
+            if (videoLightRef.current) safeSeek(videoLightRef.current, 0.02);
 
-          // Synchronously pre-draw frame 0 onto VIDEO 02 BEFORE hiding VIDEO 01 to eliminate any 1-frame blank gap
-          if (isDark && darkHeroFramesRef.current[0]) {
-            drawFrameToCanvas(heroCanvasDarkRef.current, darkHeroFramesRef.current[0], true);
-            lastDrawnDarkHeroFrameRef.current = 0;
-          } else if (!isDark && lightHeroFramesRef.current[0]) {
-            drawFrameToCanvas(heroCanvasLightRef.current, lightHeroFramesRef.current[0], false);
-            lastDrawnLightHeroFrameRef.current = 0;
+            // Synchronously pre-draw frame 0 onto VIDEO 02 BEFORE hiding VIDEO 01 to eliminate any 1-frame blank gap
+            if (isDark && darkHeroFramesRef.current[0]) {
+              drawFrameToCanvas(heroCanvasDarkRef.current, darkHeroFramesRef.current[0], true);
+              lastDrawnDarkHeroFrameRef.current = 0;
+            } else if (!isDark && lightHeroFramesRef.current[0]) {
+              drawFrameToCanvas(heroCanvasLightRef.current, lightHeroFramesRef.current[0], false);
+              lastDrawnLightHeroFrameRef.current = 0;
+            }
+
+            lastDrawnDarkIntroFrameRef.current = 0;
+            lastDrawnLightIntroFrameRef.current = 0;
+
+            // Immediately switch control to VIDEO 02 in the exact same animation frame (zero delay handoff)
+            heroStateRef.current = 'SCROLL_ACTIVE';
+            if (introContainerRef.current) {
+              introContainerRef.current.style.visibility = 'hidden';
+            }
           }
+        } else if (transitionDirectionRef.current === 'TO_HOVER') {
+          // Reverse scroll transition: scrub from frame 0 to current mouse position
+          if (rawScroll > 4) {
+            transitionDirectionRef.current = 'TO_SCROLL';
+            rewindStartProgressRef.current = introSmoothedProgressRef.current;
+            rewindStartTimeRef.current = now;
+            const dist = Math.abs(rewindStartProgressRef.current);
+            rewindDurationRef.current = Math.round(140 + Math.max(0.1, dist) * 110);
+          } else {
+            const target = latestMouseProgressRef.current;
+            returnTargetProgressRef.current = target;
 
-          lastDrawnDarkIntroFrameRef.current = 0;
-          lastDrawnLightIntroFrameRef.current = 0;
+            const elapsed = now - returnStartTimeRef.current;
+            const duration = Math.max(80, returnDurationRef.current);
+            const progress = Math.min(1.0, elapsed / duration);
+            const eased = easeInOutCubic(progress);
 
-          // Immediately switch control to VIDEO 02 in the exact same animation frame
-          heroStateRef.current = 'SCROLL_VIDEO_ACTIVE';
-          if (introContainerRef.current) {
-            introContainerRef.current.style.visibility = 'hidden';
+            introSmoothedProgressRef.current = target * eased;
+
+            if (progress >= 1.0) {
+              // Once VIDEO 01 reaches the correct cursor frame: restore hover control
+              introSmoothedProgressRef.current = target;
+              introTargetProgressRef.current = target;
+              heroStateRef.current = 'HOVER_ACTIVE';
+            }
           }
         }
-      } else if (heroStateRef.current === 'SCROLL_VIDEO_ACTIVE') {
+      } else if (heroStateRef.current === 'SCROLL_ACTIVE') {
         // Continuous, silky smooth scroll scrub interpolation with natural inertia
         const targetScroll = rawScrollYRef.current;
         const scrollDelta = targetScroll - smoothedScrollYRef.current;
@@ -874,7 +895,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
           smoothedScrollYRef.current = targetScroll;
         }
 
-        // REVERSE SCROLL: When scrolling back upward and VIDEO 02 reaches the beginning frame:
+        // REVERSE SCROLL: When scrolling back upward and VIDEO 02 reaches the beginning frame (scroll reaches 0):
         if (rawScroll <= 0 && smoothedScrollYRef.current <= 2) {
           smoothedScrollYRef.current = 0;
 
@@ -896,47 +917,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
           lastDrawnDarkHeroFrameRef.current = 0;
           lastDrawnLightHeroFrameRef.current = 0;
 
-          // Immediately activate VIDEO 01 in the exact same animation frame
-          heroStateRef.current = 'RETURN_TO_HOVER';
+          // VIDEO 01 appears at frame 0
+          introSmoothedProgressRef.current = 0;
           if (introContainerRef.current) {
             introContainerRef.current.style.visibility = 'visible';
           }
 
-          // VIDEO 01 starts at frame 0
-          introSmoothedProgressRef.current = 0;
+          // State becomes TRANSITIONING towards HOVER_ACTIVE
+          heroStateRef.current = 'TRANSITIONING';
+          transitionDirectionRef.current = 'TO_HOVER';
           returnStartTimeRef.current = now;
           returnTargetProgressRef.current = latestMouseProgressRef.current;
           const returnDist = Math.abs(returnTargetProgressRef.current);
-          returnDurationRef.current = Math.round(110 + Math.max(0.1, returnDist) * 140);
-        }
-      } else if (heroStateRef.current === 'RETURN_TO_HOVER') {
-        smoothedScrollYRef.current = 0;
-
-        // Downward interrupt: if user starts scrolling down again during return
-        if (rawScroll > 4) {
-          heroStateRef.current = 'VIDEO_HANDOFF';
-          rewindStartProgressRef.current = introSmoothedProgressRef.current;
-          rewindStartTimeRef.current = now;
-          const dist = Math.abs(rewindStartProgressRef.current);
-          rewindDurationRef.current = Math.round(110 + Math.max(0.1, dist) * 140);
-        } else {
-          // Move VIDEO 01 forward until it reaches the frame corresponding to the current cursor position
-          const target = latestMouseProgressRef.current;
-          returnTargetProgressRef.current = target;
-
-          const elapsed = now - returnStartTimeRef.current;
-          const duration = Math.max(80, returnDurationRef.current);
-          const progress = Math.min(1.0, elapsed / duration);
-          const eased = easeInOutCubic(progress);
-
-          introSmoothedProgressRef.current = target * eased;
-
-          if (progress >= 1.0) {
-            // Once VIDEO 01 reaches the correct cursor frame: restore hover control
-            introSmoothedProgressRef.current = target;
-            introTargetProgressRef.current = target;
-            heroStateRef.current = 'HOVER_VIDEO_ACTIVE';
-          }
+          returnDurationRef.current = Math.round(140 + Math.max(0.1, returnDist) * 110);
         }
       }
 
@@ -945,7 +938,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       // =======================================================================
       // LAYER VISIBILITY (ZERO OPACITY MANIPULATION, NO BLENDING)
       // =======================================================================
-      if (heroStateRef.current === 'SCROLL_VIDEO_ACTIVE') {
+      if (heroStateRef.current === 'SCROLL_ACTIVE') {
         if (introVideoDarkRef.current && !introVideoDarkRef.current.paused) introVideoDarkRef.current.pause();
         if (introVideoLightRef.current && !introVideoLightRef.current.paused) introVideoLightRef.current.pause();
         if (introContainerRef.current) {
@@ -955,28 +948,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       } else {
         if (introContainerRef.current) {
           introContainerRef.current.style.visibility = 'visible';
-          introContainerRef.current.style.pointerEvents = heroStateRef.current === 'HOVER_VIDEO_ACTIVE' ? 'auto' : 'none';
+          introContainerRef.current.style.pointerEvents = heroStateRef.current === 'HOVER_ACTIVE' ? 'auto' : 'none';
         }
       }
 
       // Top prompt visibility (only at top during hover)
       if (topPromptRef.current) {
-        const showTop = heroStateRef.current === 'HOVER_VIDEO_ACTIVE' && s <= 15;
+        const showTop = heroStateRef.current === 'HOVER_ACTIVE' && s <= 15;
         topPromptRef.current.style.opacity = showTop ? '1' : '0';
         topPromptRef.current.style.pointerEvents = showTop ? 'auto' : 'none';
       }
 
-      // Status cue visibility (freeze stage 500px -> 620px)
+      // Status cue visibility (freeze stage 1200px -> 1350px)
       if (statusCueRef.current) {
-        const showCue = s >= 500 && s < 620;
+        const showCue = s >= 1200 && s < 1350;
         statusCueRef.current.style.opacity = showCue ? '1' : '0';
       }
 
       // =======================================================================
       // VIDEO 1 (CREATURE INTRO) EXPLORE / HOVER RENDERING
-      // Active whenever heroState is NOT SCROLL_VIDEO_ACTIVE
+      // Active whenever heroState is NOT SCROLL_ACTIVE
       // =======================================================================
-      if (heroStateRef.current !== 'SCROLL_VIDEO_ACTIVE') {
+      if (heroStateRef.current !== 'SCROLL_ACTIVE') {
         const introProgress = introSmoothedProgressRef.current;
 
         // Dark Creature:
@@ -993,7 +986,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
           const v = introVideoDarkRef.current;
           const dur = darkIntroDurationRef.current;
-          const targetTime = 0.03 + introProgress * Math.max(0.1, dur - 0.20);
+          const targetTime = 0.01 + introProgress * (dur - 0.03);
           if (Math.abs(v.currentTime - targetTime) > 0.02) {
             const isStuck = isDarkIntroSeekingRef.current && (now - lastDarkIntroSeekTimeRef.current > 500);
             if (v.seeking && !isStuck) {
@@ -1020,7 +1013,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
           const v = introVideoLightRef.current;
           const dur = lightIntroDurationRef.current;
-          const targetTime = 0.03 + introProgress * Math.max(0.1, dur - 0.20);
+          const targetTime = 0.01 + introProgress * (dur - 0.03);
           if (Math.abs(v.currentTime - targetTime) > 0.02) {
             const isStuck = isLightIntroSeekingRef.current && (now - lastLightIntroSeekTimeRef.current > 500);
             if (v.seeking && !isStuck) {
@@ -1035,10 +1028,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       }
 
       // =======================================================================
-      // VIDEO 2 (HERO VIDEO) SCROLL SCRUBBING (0px -> 500px)
-      // Fast, high-responsiveness scrubbing synchronized with scroll progress
+      // VIDEO 2 (HERO VIDEO) SCROLL SCRUBBING (0px -> HERO_SCRUB_DISTANCE px)
+      // Fast, high-responsiveness scrubbing covering 100% of video duration
       // =======================================================================
-      const heroProgress = heroStateRef.current === 'SCROLL_VIDEO_ACTIVE' ? Math.min(1.0, Math.max(0, s / 500)) : 0;
+      const HERO_SCRUB_DISTANCE = 1200;
+      const heroProgress = heroStateRef.current === 'SCROLL_ACTIVE' ? Math.min(1.0, Math.max(0, s / HERO_SCRUB_DISTANCE)) : 0;
 
       // Dark Hero Video / Canvas:
       if (heroCanvasDarkRef.current && darkHeroFramesRef.current.length > 0) {
@@ -1054,7 +1048,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       } else if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
         const v = videoDarkRef.current;
         const dur = darkHeroDurationRef.current;
-        const targetTime = 0.03 + heroProgress * Math.max(0.1, dur - 0.20);
+        const targetTime = 0.01 + heroProgress * (dur - 0.03);
         if (Math.abs(v.currentTime - targetTime) > 0.02) {
           const isStuck = isDarkHeroSeekingRef.current && (now - lastDarkHeroSeekTimeRef.current > 500);
           if (v.seeking && !isStuck) {
@@ -1081,7 +1075,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       } else if (videoLightRef.current && lightHeroDurationRef.current > 0) {
         const v = videoLightRef.current;
         const dur = lightHeroDurationRef.current;
-        const targetTime = 0.03 + heroProgress * Math.max(0.1, dur - 0.20);
+        const targetTime = 0.01 + heroProgress * (dur - 0.03);
         if (Math.abs(v.currentTime - targetTime) > 0.02) {
           const isStuck = isLightHeroSeekingRef.current && (now - lastLightHeroSeekTimeRef.current > 500);
           if (v.seeking && !isStuck) {
@@ -1095,25 +1089,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       }
 
       // =======================================================================
-      // TYPOGRAPHY EVOLUTION (PROPORTIONALLY SCALED TO 500px SCRUB)
+      // TYPOGRAPHY EVOLUTION (PROPORTIONALLY SCALED TO 1200px SCRUB)
       // =======================================================================
-      // Headline 1: moves upward (0px -> -22px) and fades out (1.0 -> 0.0) between 80px and 260px
-      const f1 = smoothstep(80, 260, s);
+      // Headline 1: moves upward (0px -> -22px) and fades out (1.0 -> 0.0) between 100px and 450px
+      const f1 = smoothstep(100, 450, s);
       const h1Y = -f1 * 22;
       const h1Op = 1 - f1;
 
-      // Headline 2: rises from below (+35px -> 0px) and fades in (0.0 -> 1.0) between 200px and 400px
-      const f2 = smoothstep(200, 400, s);
+      // Headline 2: rises from below (+35px -> 0px) and fades in (0.0 -> 1.0) between 400px and 800px
+      const f2 = smoothstep(400, 800, s);
       const h2Y = (1 - f2) * 35;
       const h2Op = f2;
 
-      // Supporting text: emerges gently (15px -> 0px, 0.0 -> 1.0) between 300px and 460px
-      const fSup = smoothstep(300, 460, s);
+      // Supporting text: emerges gently (15px -> 0px, 0.0 -> 1.0) between 650px and 1050px
+      const fSup = smoothstep(650, 1050, s);
       const supY = (1 - fSup) * 15;
       const supOp = fSup;
 
-      // Right column subtle parallax lift (0px -> -20px) between 0px and 500px
-      const rightProgress = Math.min(1.0, Math.max(0, s / 500));
+      // Right column subtle parallax lift (0px -> -20px) across entire 1200px scrub
+      const rightProgress = Math.min(1.0, Math.max(0, s / 1200));
       const rightY = -rightProgress * 20;
 
       if (headline1Ref.current) {
@@ -1135,10 +1129,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       }
 
       // =======================================================================
-      // DOWNWARD PUSH TRANSITION (620px -> 1100px)
+      // DOWNWARD PUSH TRANSITION (1350px -> 1850px)
       // =======================================================================
-      const pushStart = 620;
-      const pushEnd = 1100;
+      const pushStart = 1350;
+      const pushEnd = 1850;
       let push = 0;
       if (s > pushStart) {
         push = Math.min(1.0, (s - pushStart) / (pushEnd - pushStart));
@@ -1169,7 +1163,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       data-hero-container="true"
       className="relative w-full"
       style={{
-        height: 'calc(100vh + 2500px)',
+        height: 'calc(100vh + 3250px)',
         opacity: isSiteLoaded ? 1 : 0,
         pointerEvents: isSiteLoaded ? 'auto' : 'none',
         transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)',

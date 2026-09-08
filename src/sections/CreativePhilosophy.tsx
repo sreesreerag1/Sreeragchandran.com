@@ -1,7 +1,75 @@
 import React, { useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, useMotionValue, MotionValue } from 'framer-motion';
 
 const VIDEO_URL = '/turn-toward-camera.mp4';
 const FALLBACK_VIDEO_URL = '/Turn toword camer.mp4';
+
+const ABOUT_PARAGRAPH =
+  "With more than five years of experience in design, i focus on branding, web design, and user experience, i truly enjoy working with businesses that aim to stand out and present their best image. Let's build something incredible together!";
+
+interface CharacterProps {
+  char: string;
+  progress: MotionValue<number>;
+  range: [number, number];
+}
+
+const CharacterSpan: React.FC<CharacterProps> = ({ char, progress, range }) => {
+  const opacity = useTransform(progress, range, [0.2, 1]);
+  return <motion.span style={{ opacity }}>{char}</motion.span>;
+};
+
+const CharacterRevealParagraph: React.FC<{
+  text: string;
+  progress: MotionValue<number>;
+  className?: string;
+}> = ({ text, progress, className }) => {
+  const words = text.split(' ');
+  const totalChars = text.length;
+  let charCounter = 0;
+
+  return (
+    <p className={className}>
+      {words.map((word, wIdx) => {
+        const chars = word.split('');
+        const wordSpans = chars.map((char) => {
+          const i = charCounter++;
+          const start = i / totalChars;
+          const end = Math.min(1, (i + 1) / totalChars);
+          return (
+            <CharacterSpan
+              key={i}
+              char={char}
+              progress={progress}
+              range={[start, end]}
+            />
+          );
+        });
+
+        let spaceSpan: React.ReactNode = null;
+        if (wIdx < words.length - 1) {
+          const i = charCounter++;
+          const start = i / totalChars;
+          const end = Math.min(1, (i + 1) / totalChars);
+          spaceSpan = (
+            <CharacterSpan
+              key={`space-${wIdx}`}
+              char=" "
+              progress={progress}
+              range={[start, end]}
+            />
+          );
+        }
+
+        return (
+          <span key={wIdx} className="inline-block whitespace-nowrap">
+            {wordSpans}
+            {spaceSpan}
+          </span>
+        );
+      })}
+    </p>
+  );
+};
 
 interface CreativePhilosophyProps {
   isHeroIntegrated?: boolean;
@@ -46,8 +114,17 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
   scrollProgress: externalScrollProgress,
 }) => {
   const standaloneContainerRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Framer Motion useScroll hook with offset ['start 0.8', 'end 0.2']
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start 0.8', 'end 0.2'],
+  });
+
+  const animatedProgress = useMotionValue(0.2);
 
   // Animated elements refs for 120fps hardware-accelerated scroll synchronization
   const textContainerRef = useRef<HTMLDivElement>(null);
@@ -64,19 +141,25 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
   useEffect(() => {
     if (isHeroIntegrated) {
       if (typeof externalScrollProgress === 'number') {
-        scrollTargetRef.current = Math.max(0, Math.min(1, externalScrollProgress));
+        const p = Math.max(0, Math.min(1, externalScrollProgress));
+        scrollTargetRef.current = p;
+        animatedProgress.set(p);
       } else {
         const handleWindowScroll = () => {
           const currentY = window.scrollY || window.pageYOffset;
-          // Hero downward push finishes at 1100px; philosophy section scrubs from 1100px to 2300px
-          const p = Math.max(0, Math.min(1, (currentY - 1100) / 1200));
+          // Hero downward push finishes at 1850px; philosophy section scrubs from 1850px to 3050px (1200px duration)
+          const p = Math.max(0, Math.min(1, (currentY - 1850) / 1200));
           scrollTargetRef.current = p;
+          animatedProgress.set(p);
         };
         window.addEventListener('scroll', handleWindowScroll, { passive: true });
         handleWindowScroll();
         return () => window.removeEventListener('scroll', handleWindowScroll);
       }
     } else {
+      const unsubscribe = scrollYProgress.on('change', (latest) => {
+        animatedProgress.set(latest);
+      });
       // Standalone dedicated scroll container listener
       const handleStandaloneScroll = () => {
         const container = standaloneContainerRef.current;
@@ -93,9 +176,12 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
       window.addEventListener('scroll', handleStandaloneScroll, { passive: true });
       handleStandaloneScroll();
-      return () => window.removeEventListener('scroll', handleStandaloneScroll);
+      return () => {
+        unsubscribe();
+        window.removeEventListener('scroll', handleStandaloneScroll);
+      };
     }
-  }, [isHeroIntegrated, externalScrollProgress]);
+  }, [isHeroIntegrated, externalScrollProgress, scrollYProgress, animatedProgress]);
 
   // Handle canvas resize with DPR cap of 2
   const handleResize = () => {
@@ -375,6 +461,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
 
   const content = (
     <section
+      ref={sectionRef}
       id="philosophy"
       className="relative z-20 w-full h-full bg-[#050505] text-[#F5F5F2] flex flex-col justify-between select-none overflow-hidden px-5 sm:px-8 md:px-14 lg:px-18 xl:px-24 pt-16 sm:pt-20 md:pt-24 pb-3 sm:pb-5 md:pb-8"
     >
@@ -474,20 +561,23 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
             </h2>
           </div>
 
-          {/* Supporting Paragraph 1 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-2 sm:mt-3 lg:mt-4 max-w-xl">
-            I’m Sreerag Chandran, a multidisciplinary Creative Director with 15 years of experience across advertising, branding, live experiences and visual storytelling.
-          </p>
+          {/* Restored Scroll-Based Character-by-Character Animated Paragraph */}
+          <CharacterRevealParagraph
+            text={ABOUT_PARAGRAPH}
+            progress={animatedProgress}
+            className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.6] sm:leading-[1.65] lg:leading-[1.72] font-light mt-3 sm:mt-4 lg:mt-5 max-w-xl"
+          />
 
-          {/* Supporting Paragraph 2 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
-            I believe the strongest ideas don’t belong to a single medium. They can live on a billboard, transform a space, become an immersive experience or exist on a screen.
-          </p>
-
-          {/* Supporting Paragraph 3 */}
-          <p className="font-sans text-[11px] sm:text-xs md:text-[13px] xl:text-[14px] text-white leading-[1.55] sm:leading-[1.62] lg:leading-[1.68] font-light mt-1.5 sm:mt-2 lg:mt-2.5 max-w-xl">
-            My work sits at the intersection of strategy, storytelling and design, creating ideas that are not only visually distinctive, but built to connect with people.
-          </p>
+          {/* Contact Button CTA */}
+          <div className="mt-4 sm:mt-6">
+            <a
+              href="#contact"
+              className="group inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-white/20 bg-white/[0.04] hover:bg-white hover:text-black font-mono text-[10px] sm:text-xs uppercase tracking-[0.16em] text-white transition-all duration-300 cursor-pointer shadow-sm"
+            >
+              <span>START A CONVERSATION</span>
+              <span className="transform transition-transform group-hover:translate-x-1">→</span>
+            </a>
+          </div>
         </div>
 
         {/* RIGHT SIDE: Open space letting the cinematic subject & atmospheric smoke shine through */}
