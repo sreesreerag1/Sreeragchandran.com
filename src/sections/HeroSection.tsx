@@ -53,13 +53,37 @@ const calculateDrawBounds = (
   return { shiftX, shiftY, drawWidth, drawHeight };
 };
 
-// Safe fastSeek helper with fallback to currentTime for ultra-responsive video scrubbing
-const safeSeek = (v: HTMLVideoElement, time: number) => {
-  if ('fastSeek' in v && typeof (v as any).fastSeek === 'function') {
-    (v as any).fastSeek(time);
-  } else {
-    v.currentTime = time;
+// Dedicated, zero-flicker frame renderer that directly paints over the canvas without clearing to transparent
+const drawFrameToCanvas = (
+  canvas: HTMLCanvasElement | null,
+  frame: CanvasImageSource | undefined,
+  isDarkTheme: boolean
+) => {
+  if (!canvas || !frame) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const fWidth = (frame as any).width || 1280;
+  const fHeight = (frame as any).height || 720;
+  const bounds = calculateDrawBounds(canvas.width, canvas.height, fWidth, fHeight);
+
+  // Fill pillarbox side margins on ultra-wide monitors without wiping the active character display
+  if (bounds.shiftX > 0) {
+    ctx.fillStyle = isDarkTheme ? '#050505' : '#ffffff';
+    ctx.fillRect(0, 0, bounds.shiftX, canvas.height);
+    ctx.fillRect(bounds.shiftX + bounds.drawWidth, 0, canvas.width - (bounds.shiftX + bounds.drawWidth), canvas.height);
   }
+  ctx.drawImage(frame, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
+};
+
+// Safe seek helper ensuring valid frame boundaries (never EOF, never negative, zero fastSeek snapping)
+const safeSeek = (v: HTMLVideoElement, time: number) => {
+  const dur = v.duration || 10;
+  const clampedTime = Math.max(0.02, Math.min(dur - 0.18, time));
+  try {
+    v.currentTime = clampedTime;
+  } catch {}
 };
 
 // Helper to detect handheld mobile devices (phones/tablets only, never desktop)
@@ -331,7 +355,7 @@ export const HeroSection: React.FC = () => {
     // Upright             (rollDeg = 0) -> 0.5 (creature looks center)
     // Tilting phone right (rollDeg > 0) -> 0.0 (creature looks right)
     const tiltNorm = 0.5 - clampedRoll / (maxRoll * 2.0);
-    const clampedTilt = Math.max(0, Math.min(1, tiltNorm));
+    const clampedTilt = Math.max(0.001, Math.min(0.999, tiltNorm));
     latestMouseProgressRef.current = clampedTilt;
     if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
       introTargetProgressRef.current = clampedTilt;
@@ -377,7 +401,8 @@ export const HeroSection: React.FC = () => {
   useEffect(() => {
     // Desktop mouse hover controller
     const handleMouseMove = (e: MouseEvent) => {
-      const xNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
+      const rawNorm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
+      const xNorm = Math.max(0.001, Math.min(0.999, rawNorm));
       latestMouseProgressRef.current = xNorm;
       if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
         introTargetProgressRef.current = xNorm;
@@ -388,7 +413,8 @@ export const HeroSection: React.FC = () => {
       // If motion is actively streaming real tilt data, do not let touch drag conflict
       if (isMotionActiveRef.current) return;
       if (e.touches && e.touches.length > 0) {
-        const xNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
+        const rawNorm = 1 - Math.max(0, Math.min(1, e.touches[0].clientX / window.innerWidth));
+        const xNorm = Math.max(0.001, Math.min(0.999, rawNorm));
         latestMouseProgressRef.current = xNorm;
         if (heroStateRef.current === 'HOVER_VIDEO_ACTIVE') {
           introTargetProgressRef.current = xNorm;
@@ -497,9 +523,22 @@ export const HeroSection: React.FC = () => {
           offscreenVideo.removeEventListener('loadedmetadata', onMeta);
           resolve();
         };
-        offscreenVideo.addEventListener('loadedmetadata', onMeta);
-        setTimeout(resolve, 3000);
+        if (offscreenVideo.readyState >= 1) {
+          resolve();
+        } else {
+          offscreenVideo.addEventListener('loadedmetadata', onMeta);
+          setTimeout(resolve, 3000);
+        }
       });
+
+      // Hardware decoder priming: start muted playback and pause immediately so frame 0 texture is in GPU buffer
+      try {
+        const playPromise = offscreenVideo.play();
+        if (playPromise !== undefined) {
+          await playPromise.catch(() => {});
+          offscreenVideo.pause();
+        }
+      } catch {}
 
       const duration = offscreenVideo.duration || 10;
       durationRefTarget.current = duration;
@@ -522,10 +561,15 @@ export const HeroSection: React.FC = () => {
         ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
       }
 
+      // Safe bounds: frame 0 starts at 0.03s (guaranteed forward seek from 0.0s),
+      // and frame N ends at duration - 0.20s (safely avoiding EOF buffer flush / black frames).
+      const safeStart = 0.03;
+      const safeEnd = Math.max(safeStart + 0.5, duration - 0.20);
+
       const extracted: CanvasImageSource[] = [];
       for (let i = 0; i < targetFrames; i++) {
         if (!isMounted()) break;
-        const targetTime = (i / (targetFrames - 1)) * Math.max(0, duration - 0.05);
+        const targetTime = safeStart + (i / Math.max(1, targetFrames - 1)) * (safeEnd - safeStart);
         await new Promise<void>((resolve) => {
           let done = false;
           const finish = () => {
@@ -535,9 +579,12 @@ export const HeroSection: React.FC = () => {
             clearTimeout(tid);
             resolve();
           };
-          // 1200ms safety timeout (never prematurely abort a seek)
-          const tid = setTimeout(finish, 1200);
-          offscreenVideo.addEventListener('seeked', finish);
+          // 800ms safety timeout (never prematurely abort a seek)
+          const tid = setTimeout(finish, 800);
+          if ('requestVideoFrameCallback' in offscreenVideo) {
+            (offscreenVideo as any).requestVideoFrameCallback(finish);
+          }
+          offscreenVideo.addEventListener('seeked', finish, { once: true });
           offscreenVideo.currentTime = targetTime;
         });
 
@@ -553,18 +600,51 @@ export const HeroSection: React.FC = () => {
             const cCtx = c.getContext('2d');
             if (cCtx) {
               cCtx.drawImage(extractCanvas, 0, 0);
-              extracted.push(c);
+
+              // Blank frame detection: ensure extracted frame has valid non-transparent pixels
+              let isBlank = false;
+              try {
+                const sample = cCtx.getImageData(Math.round(targetWidth / 2), Math.round(targetHeight / 2), 1, 1).data;
+                if (sample[3] === 0) {
+                  isBlank = true;
+                }
+              } catch {}
+
+              if (!isBlank) {
+                extracted.push(c);
+              } else if (extracted.length > 0) {
+                // If a boundary seek produced an empty frame, clone the previous valid frame so zero blank frames exist
+                const fallbackCanvas = document.createElement('canvas');
+                fallbackCanvas.width = targetWidth;
+                fallbackCanvas.height = targetHeight;
+                const fbCtx = fallbackCanvas.getContext('2d');
+                if (fbCtx) {
+                  fbCtx.drawImage(extracted[extracted.length - 1], 0, 0);
+                  extracted.push(fallbackCanvas);
+                }
+              }
             }
           } catch {}
         }
 
         // Progressive activation:
-        // As soon as the very first frame is ready, activate so frame 0 is immediately painted onto the canvas
+        // As soon as the very first frame is ready, immediately paint it onto the target canvas, then set ready
         if (isMounted() && extracted.length === 1) {
           targetRef.current = [...extracted];
+          if (videoUrl === DARK_INTRO_VIDEO_URL) {
+            drawFrameToCanvas(introCanvasDarkRef.current, extracted[0], true);
+            lastDrawnDarkIntroFrameRef.current = 0;
+          } else if (videoUrl === DARK_HERO_VIDEO_URL) {
+            drawFrameToCanvas(heroCanvasDarkRef.current, extracted[0], true);
+            lastDrawnDarkHeroFrameRef.current = 0;
+          } else if (videoUrl === LIGHT_INTRO_VIDEO_URL) {
+            drawFrameToCanvas(introCanvasLightRef.current, extracted[0], false);
+            lastDrawnLightIntroFrameRef.current = 0;
+          } else if (videoUrl === LIGHT_HERO_VIDEO_URL) {
+            drawFrameToCanvas(heroCanvasLightRef.current, extracted[0], false);
+            lastDrawnLightHeroFrameRef.current = 0;
+          }
           setReady(true);
-          lastDrawnDarkHeroFrameRef.current = -1;
-          lastDrawnDarkIntroFrameRef.current = -1;
         } else if (isMounted() && extracted.length % 4 === 0) {
           targetRef.current = [...extracted];
           setReady(true);
@@ -716,16 +796,23 @@ export const HeroSection: React.FC = () => {
           introSmoothedProgressRef.current = 0;
           introTargetProgressRef.current = 0;
 
-          // Synchronize currentTime: 0 on both videos before switching
-          if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0);
-          if (introVideoLightRef.current) safeSeek(introVideoLightRef.current, 0);
-          if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0);
-          if (videoLightRef.current) safeSeek(videoLightRef.current, 0);
+          // Synchronize currentTime on both videos before switching (0.02s avoids keyframe stall)
+          if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0.02);
+          if (introVideoLightRef.current) safeSeek(introVideoLightRef.current, 0.02);
+          if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0.02);
+          if (videoLightRef.current) safeSeek(videoLightRef.current, 0.02);
+
+          // Synchronously pre-draw frame 0 onto VIDEO 02 BEFORE hiding VIDEO 01 to eliminate any 1-frame blank gap
+          if (isDark && darkHeroFramesRef.current[0]) {
+            drawFrameToCanvas(heroCanvasDarkRef.current, darkHeroFramesRef.current[0], true);
+            lastDrawnDarkHeroFrameRef.current = 0;
+          } else if (!isDark && lightHeroFramesRef.current[0]) {
+            drawFrameToCanvas(heroCanvasLightRef.current, lightHeroFramesRef.current[0], false);
+            lastDrawnLightHeroFrameRef.current = 0;
+          }
 
           lastDrawnDarkIntroFrameRef.current = 0;
           lastDrawnLightIntroFrameRef.current = 0;
-          lastDrawnDarkHeroFrameRef.current = -1; // force hero canvas to draw frame 0
-          lastDrawnLightHeroFrameRef.current = -1;
 
           // Immediately switch control to VIDEO 02 in the exact same animation frame
           heroStateRef.current = 'SCROLL_VIDEO_ACTIVE';
@@ -748,14 +835,23 @@ export const HeroSection: React.FC = () => {
         if (rawScroll <= 0 && smoothedScrollYRef.current <= 2) {
           smoothedScrollYRef.current = 0;
 
-          // Synchronize: both videos at matching frame (currentTime: 0)
-          if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0);
-          if (videoLightRef.current) safeSeek(videoLightRef.current, 0);
-          if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0);
-          if (introVideoLightRef.current) safeSeek(introVideoLightRef.current, 0);
+          // Synchronize: both videos at matching frame (0.02s)
+          if (videoDarkRef.current) safeSeek(videoDarkRef.current, 0.02);
+          if (videoLightRef.current) safeSeek(videoLightRef.current, 0.02);
+          if (introVideoDarkRef.current) safeSeek(introVideoDarkRef.current, 0.02);
+          if (introVideoLightRef.current) safeSeek(introVideoLightRef.current, 0.02);
+
+          // Synchronously pre-draw frame 0 onto VIDEO 01 BEFORE making it visible
+          if (isDark && darkIntroFramesRef.current[0]) {
+            drawFrameToCanvas(introCanvasDarkRef.current, darkIntroFramesRef.current[0], true);
+            lastDrawnDarkIntroFrameRef.current = 0;
+          } else if (!isDark && lightIntroFramesRef.current[0]) {
+            drawFrameToCanvas(introCanvasLightRef.current, lightIntroFramesRef.current[0], false);
+            lastDrawnLightIntroFrameRef.current = 0;
+          }
 
           lastDrawnDarkHeroFrameRef.current = 0;
-          lastDrawnDarkIntroFrameRef.current = -1; // force canvas to draw frame 0
+          lastDrawnLightHeroFrameRef.current = 0;
 
           // Immediately activate VIDEO 01 in the exact same animation frame
           heroStateRef.current = 'RETURN_TO_HOVER';
@@ -849,28 +945,12 @@ export const HeroSection: React.FC = () => {
           );
           if (frameIndex !== lastDrawnDarkIntroFrameRef.current) {
             lastDrawnDarkIntroFrameRef.current = frameIndex;
-            const frame = darkFrames[frameIndex];
-            if (frame) {
-              const ctx = introCanvasDarkRef.current.getContext('2d');
-              if (ctx) {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                const fWidth = (frame as any).width || 1280;
-                const fHeight = (frame as any).height || 720;
-                const bounds = calculateDrawBounds(
-                  introCanvasDarkRef.current.width,
-                  introCanvasDarkRef.current.height,
-                  fWidth,
-                  fHeight
-                );
-                ctx.clearRect(0, 0, introCanvasDarkRef.current.width, introCanvasDarkRef.current.height);
-                ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-              }
-            }
+            drawFrameToCanvas(introCanvasDarkRef.current, darkFrames[frameIndex], true);
           }
         } else if (introVideoDarkRef.current && darkIntroDurationRef.current > 0) {
           const v = introVideoDarkRef.current;
-          const targetTime = introProgress * Math.max(0, darkIntroDurationRef.current - 0.05);
+          const dur = darkIntroDurationRef.current;
+          const targetTime = 0.03 + introProgress * Math.max(0.1, dur - 0.20);
           if (Math.abs(v.currentTime - targetTime) > 0.02) {
             const isStuck = isDarkIntroSeekingRef.current && (now - lastDarkIntroSeekTimeRef.current > 500);
             if (v.seeking && !isStuck) {
@@ -892,28 +972,12 @@ export const HeroSection: React.FC = () => {
           );
           if (frameIndex !== lastDrawnLightIntroFrameRef.current) {
             lastDrawnLightIntroFrameRef.current = frameIndex;
-            const frame = lightFrames[frameIndex];
-            if (frame) {
-              const ctx = introCanvasLightRef.current.getContext('2d');
-              if (ctx) {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                const fWidth = (frame as any).width || 1280;
-                const fHeight = (frame as any).height || 720;
-                const bounds = calculateDrawBounds(
-                  introCanvasLightRef.current.width,
-                  introCanvasLightRef.current.height,
-                  fWidth,
-                  fHeight
-                );
-                ctx.clearRect(0, 0, introCanvasLightRef.current.width, introCanvasLightRef.current.height);
-                ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-              }
-            }
+            drawFrameToCanvas(introCanvasLightRef.current, lightFrames[frameIndex], false);
           }
         } else if (introVideoLightRef.current && lightIntroDurationRef.current > 0) {
           const v = introVideoLightRef.current;
-          const targetTime = introProgress * Math.max(0, lightIntroDurationRef.current - 0.05);
+          const dur = lightIntroDurationRef.current;
+          const targetTime = 0.03 + introProgress * Math.max(0.1, dur - 0.20);
           if (Math.abs(v.currentTime - targetTime) > 0.02) {
             const isStuck = isLightIntroSeekingRef.current && (now - lastLightIntroSeekTimeRef.current > 500);
             if (v.seeking && !isStuck) {
@@ -942,28 +1006,12 @@ export const HeroSection: React.FC = () => {
         );
         if (frameIndex !== lastDrawnDarkHeroFrameRef.current) {
           lastDrawnDarkHeroFrameRef.current = frameIndex;
-          const frame = darkFrames[frameIndex];
-          if (frame) {
-            const ctx = heroCanvasDarkRef.current.getContext('2d');
-            if (ctx) {
-              ctx.imageSmoothingEnabled = true;
-              ctx.imageSmoothingQuality = 'high';
-              const fWidth = (frame as any).width || 1280;
-              const fHeight = (frame as any).height || 720;
-              const bounds = calculateDrawBounds(
-                heroCanvasDarkRef.current.width,
-                heroCanvasDarkRef.current.height,
-                fWidth,
-                fHeight
-              );
-              ctx.clearRect(0, 0, heroCanvasDarkRef.current.width, heroCanvasDarkRef.current.height);
-              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-            }
-          }
+          drawFrameToCanvas(heroCanvasDarkRef.current, darkFrames[frameIndex], true);
         }
       } else if (videoDarkRef.current && darkHeroDurationRef.current > 0) {
         const v = videoDarkRef.current;
-        const targetTime = heroProgress * Math.max(0, darkHeroDurationRef.current - 0.05);
+        const dur = darkHeroDurationRef.current;
+        const targetTime = 0.03 + heroProgress * Math.max(0.1, dur - 0.20);
         if (Math.abs(v.currentTime - targetTime) > 0.02) {
           const isStuck = isDarkHeroSeekingRef.current && (now - lastDarkHeroSeekTimeRef.current > 500);
           if (v.seeking && !isStuck) {
@@ -985,28 +1033,12 @@ export const HeroSection: React.FC = () => {
         );
         if (frameIndex !== lastDrawnLightHeroFrameRef.current) {
           lastDrawnLightHeroFrameRef.current = frameIndex;
-          const frame = lightFrames[frameIndex];
-          if (frame) {
-            const ctx = heroCanvasLightRef.current.getContext('2d');
-            if (ctx) {
-              ctx.imageSmoothingEnabled = true;
-              ctx.imageSmoothingQuality = 'high';
-              const fWidth = (frame as any).width || 1280;
-              const fHeight = (frame as any).height || 720;
-              const bounds = calculateDrawBounds(
-                heroCanvasLightRef.current.width,
-                heroCanvasLightRef.current.height,
-                fWidth,
-                fHeight
-              );
-              ctx.clearRect(0, 0, heroCanvasLightRef.current.width, heroCanvasLightRef.current.height);
-              ctx.drawImage(frame as CanvasImageSource, 0, 0, fWidth, fHeight, bounds.shiftX, bounds.shiftY, bounds.drawWidth, bounds.drawHeight);
-            }
-          }
+          drawFrameToCanvas(heroCanvasLightRef.current, lightFrames[frameIndex], false);
         }
       } else if (videoLightRef.current && lightHeroDurationRef.current > 0) {
         const v = videoLightRef.current;
-        const targetTime = heroProgress * Math.max(0, lightHeroDurationRef.current - 0.05);
+        const dur = lightHeroDurationRef.current;
+        const targetTime = 0.03 + heroProgress * Math.max(0.1, dur - 0.20);
         if (Math.abs(v.currentTime - targetTime) > 0.02) {
           const isStuck = isLightHeroSeekingRef.current && (now - lastLightHeroSeekTimeRef.current > 500);
           if (v.seeking && !isStuck) {
