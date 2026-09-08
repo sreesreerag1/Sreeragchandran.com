@@ -2,54 +2,18 @@ import React, { useEffect, useRef } from 'react';
 
 const VIDEO_URL = '/turn-toward-camera.mp4';
 const FALLBACK_VIDEO_URL = '/Turn toword camer.mp4';
-const POSTER_URL = '/turn-toward-camera-poster.jpg';
 
 interface CreativePhilosophyProps {
   isHeroIntegrated?: boolean;
   scrollProgress?: number;
 }
 
-// Precise cubic-bezier solver for cubic-bezier(0.22, 1, 0.36, 1)
-const solveCubicBezier = (
-  p1x: number,
-  p1y: number,
-  p2x: number,
-  p2y: number
-) => {
-  return (x: number): number => {
-    if (x <= 0) return 0;
-    if (x >= 1) return 1;
-    let t = x;
-    for (let i = 0; i < 8; i++) {
-      const currentX =
-        3 * (1 - t) * (1 - t) * t * p1x +
-        3 * (1 - t) * t * t * p2x +
-        t * t * t;
-      const currentSlope =
-        3 * (1 - t) * (1 - t) * p1x +
-        6 * (1 - t) * t * (p2x - p1x) +
-        3 * t * t * (1 - p2x);
-      if (Math.abs(currentSlope) < 1e-5) break;
-      t -= (currentX - x) / currentSlope;
-      t = Math.max(0, Math.min(1, t));
-    }
-    return (
-      3 * (1 - t) * (1 - t) * t * p1y +
-      3 * (1 - t) * t * t * p2y +
-      t * t * t
-    );
-  };
-};
 
-const easeCubic = solveCubicBezier(0.22, 1, 0.36, 1);
-
-// Safe fastSeek helper with fallback to currentTime for ultra-responsive video scrubbing
+// Safe seek helper setting currentTime directly for responsive, artifact-free scrubbing
 const safeSeek = (v: HTMLVideoElement, time: number) => {
-  if ('fastSeek' in v && typeof (v as any).fastSeek === 'function') {
-    (v as any).fastSeek(time);
-  } else {
+  try {
     v.currentTime = time;
-  }
+  } catch {}
 };
 
 // Calculate cover framing preserving full vertical height (zero vertical crop)
@@ -104,8 +68,8 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       } else {
         const handleWindowScroll = () => {
           const currentY = window.scrollY || window.pageYOffset;
-          // When integrated, hero downward push ends at 2600px; video scrub is 2600px -> 4800px
-          const p = Math.max(0, Math.min(1, (currentY - 2600) / 2200));
+          // Hero downward push finishes at 1100px; philosophy section scrubs from 1100px to 2300px
+          const p = Math.max(0, Math.min(1, (currentY - 1100) / 1200));
           scrollTargetRef.current = p;
         };
         window.addEventListener('scroll', handleWindowScroll, { passive: true });
@@ -173,6 +137,16 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       window.removeEventListener('touchstart', unlockVideo);
       window.removeEventListener('click', unlockVideo);
     };
+  }, []);
+
+  // Decoder priming on initial mount to ensure first video frame is pre-rendered
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v && v.readyState >= 1) {
+      try {
+        v.currentTime = 0.02;
+      } catch {}
+    }
   }, []);
 
   // Background frame extraction for instant 120fps reverse/forward scrubbing
@@ -295,7 +269,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
     };
 
     const onScrollTrigger = () => {
-      if ((window.scrollY || window.pageYOffset) > 1200) {
+      if ((window.scrollY || window.pageYOffset) > 500) {
         triggerExtraction();
       }
     };
@@ -335,10 +309,10 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       if (video && duration > 0) {
         if (!video.seeking && video.readyState >= 2) {
           const targetTime = Math.max(
-            0,
-            Math.min(duration - 0.05, smooth * duration)
+            0.02,
+            Math.min(duration - 0.05, 0.02 + smooth * (duration - 0.07))
           );
-          if (Math.abs(video.currentTime - targetTime) > 0.04) {
+          if (Math.abs(video.currentTime - targetTime) > 0.03) {
             safeSeek(video, targetTime);
           }
         }
@@ -374,36 +348,19 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         }
       }
 
-      // 3. TEXT & EDITORIAL SYNCHRONIZATION CONTROLLER:
-      // 0% -> 50% scroll progress:
-      //   - translateY(eased * offset) -> translateY(0px)
-      //   - opacity 0 -> opacity 1
-      //   - cubic-bezier(0.22, 1, 0.36, 1) smooth easing
-      // 50% -> 100% scroll progress:
-      //   - translateY(0px)
-      //   - opacity 1 (held firm while video continues to scrub)
+      // 3. TEXT & EDITORIAL SYNCHRONIZATION:
+      // Always fully visible (opacity: 1) and aligned so the About section is immediately readable
       if (textContainerRef.current) {
-        const isDesktop = window.innerWidth >= 1024;
-        let textY = 0;
-        let textOpacity = 1;
-        if (smooth < 0.5) {
-          const rawProgress = Math.max(0, smooth / 0.5);
-          const eased = easeCubic(rawProgress);
-          textY = (1 - eased) * (isDesktop ? 120 : 36);
-          textOpacity = eased;
-        }
-        textContainerRef.current.style.transform = `translate3d(0, ${textY.toFixed(2)}px, 0)`;
-        textContainerRef.current.style.opacity = textOpacity.toFixed(3);
+        textContainerRef.current.style.transform = 'translate3d(0, 0px, 0)';
+        textContainerRef.current.style.opacity = '1';
       }
 
-      // Synchronize top and bottom editorial bars
+      // Synchronize top and bottom editorial bars: always fully visible
       if (topBarRef.current) {
-        const topOpacity = Math.min(1, Math.max(0, smooth / 0.25));
-        topBarRef.current.style.opacity = topOpacity.toFixed(3);
+        topBarRef.current.style.opacity = '1';
       }
       if (bottomBarRef.current) {
-        const bottomOpacity = Math.min(1, Math.max(0, smooth / 0.35));
-        bottomBarRef.current.style.opacity = bottomOpacity.toFixed(3);
+        bottomBarRef.current.style.opacity = '1';
       }
 
       animId = requestAnimationFrame(render);
@@ -419,7 +376,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
   const content = (
     <section
       id="philosophy"
-      className="relative z-20 w-full h-full bg-[#050505] text-[#F5F5F2] flex flex-col justify-between select-none overflow-hidden px-5 sm:px-8 md:px-14 lg:px-18 xl:px-24 pt-7 sm:pt-10 md:pt-14 pb-3 sm:pb-5 md:pb-8"
+      className="relative z-20 w-full h-full bg-[#050505] text-[#F5F5F2] flex flex-col justify-between select-none overflow-hidden px-5 sm:px-8 md:px-14 lg:px-18 xl:px-24 pt-16 sm:pt-20 md:pt-24 pb-3 sm:pb-5 md:pb-8"
     >
       {/* =========================================================================
           CINEMATIC FULL BACKGROUND VIDEO & CANVAS SCRUB LAYER
@@ -435,14 +392,17 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         <video
           ref={videoRef}
           src={VIDEO_URL}
-          poster={POSTER_URL}
           preload="auto"
           muted
           playsInline
           onLoadedMetadata={(e) => {
-            if (e.currentTarget.duration) {
-              durationRef.current = e.currentTarget.duration;
+            const v = e.currentTarget;
+            if (v.duration) {
+              durationRef.current = v.duration;
             }
+            try {
+              v.currentTime = 0.02;
+            } catch {}
           }}
           onError={() => {
             if (videoRef.current && !videoRef.current.src.includes('Turn%20toword')) {
@@ -475,7 +435,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       <div
         ref={topBarRef}
         className="relative z-10 w-full flex items-center justify-end pb-2.5 sm:pb-4 border-b border-white/15 flex-shrink-0"
-        style={{ opacity: 0 }}
+        style={{ opacity: 1 }}
       >
         <div className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white font-medium">
           BASED IN DUBAI • STUDIO 2026
@@ -493,8 +453,8 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           ref={textContainerRef}
           className="w-full lg:w-[50%] xl:w-[46%] flex flex-col justify-end lg:justify-center will-change-transform max-w-lg lg:max-w-none"
           style={{
-            transform: 'translate3d(0, 36px, 0)',
-            opacity: 0,
+            transform: 'translate3d(0, 0px, 0)',
+            opacity: 1,
           }}
         >
           {/* Name */}
@@ -541,7 +501,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
       <div
         ref={bottomBarRef}
         className="relative z-10 pt-2 sm:pt-4 border-t border-white/15 flex-shrink-0"
-        style={{ opacity: 0 }}
+        style={{ opacity: 1 }}
       >
         <div className="flex flex-wrap items-center gap-y-1 font-mono text-[9px] sm:text-xs uppercase tracking-[0.14em] sm:tracking-[0.16em] text-white font-medium">
           <span className="hover:text-white transition-colors cursor-default">Brand Identity</span>

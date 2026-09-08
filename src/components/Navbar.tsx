@@ -27,6 +27,16 @@ export const Navbar: React.FC = () => {
       return;
     }
     const targetId = href.replace('#', '');
+
+    // Philosophy / About section is housed within HeroSection's pinned downward push
+    if (targetId === 'philosophy' || targetId === 'about') {
+      const hero = document.querySelector('[data-hero-container="true"]') as HTMLElement;
+      const baseTop = hero ? hero.offsetTop : 0;
+      // Scroll to 1150px where the downward push is 100% complete and About fills the screen
+      window.scrollTo({ top: baseTop + 1150, behavior: 'smooth' });
+      return;
+    }
+
     const elem = document.getElementById(targetId);
     if (elem) {
       elem.scrollIntoView({ behavior: 'smooth' });

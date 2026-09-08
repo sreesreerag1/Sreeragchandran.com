@@ -1166,9 +1166,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     /* Outer Pinned Scroll Track: Controls Video Scrubbing (Phase 1), Text Storytelling (Phase 2), and Downward Push (Phase 3) */
     <div
       ref={containerRef}
+      data-hero-container="true"
       className="relative w-full"
       style={{
-        height: 'calc(100vh + 2000px)',
+        height: 'calc(100vh + 2500px)',
         opacity: isSiteLoaded ? 1 : 0,
         pointerEvents: isSiteLoaded ? 'auto' : 'none',
         transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
