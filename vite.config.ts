@@ -9,5 +9,13 @@ export default defineConfig({
     port: 5199,
     host: true,
     https: true,
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  },
+  preview: {
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
   },
 })

@@ -4,6 +4,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 import { PORTFOLIO_PROJECTS, PortfolioProject } from '../data/portfolioProjects';
 import { ProjectCaseStudyModal } from '../components/ProjectCaseStudyModal';
+import { ProgressiveImage } from '../components/ProgressiveImage';
 
 interface StickyCardProps {
   project: PortfolioProject;
@@ -44,13 +45,15 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
           {/* Left: Featured Large Square (6 cols) */}
           <div className="lg:col-span-6 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
-            <img
+            <ProgressiveImage
               src={primary.src}
               alt={`${project.title} featured`}
+              aspectRatio={primary.aspectRatio}
               loading={isTopCard ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={index === 0 ? 'high' : 'auto'}
-              className="w-full h-full object-contain filter brightness-[0.95] group-hover/card:scale-[1.02] transition-transform duration-700"
+              isCardPreview={true}
+              className="group-hover/card:scale-[1.02] transition-transform duration-700"
             />
           </div>
 
@@ -58,15 +61,17 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
           <div className="hidden lg:grid lg:col-span-6 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
             {images.slice(1, 5).map((img, i) => (
               <div key={img.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
-                <img
+                <ProgressiveImage
                   src={img.src}
                   alt={`${project.title} detail ${i + 1}`}
-                  loading={isTopCard ? 'eager' : 'lazy'}
+                  aspectRatio={img.aspectRatio}
+                  loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+                  isCardPreview={true}
+                  className="group-hover/card:scale-[1.02] transition-transform duration-700"
                 />
                 {i === 3 && images.length > 5 && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10">
                     <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#F5F5F2] font-semibold">
                       +{images.length - 5} MORE
                     </span>
@@ -96,12 +101,14 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
           <div className="hidden lg:grid lg:col-span-5 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
             {portraitsToDisplay.map((pImg, pIdx) => (
               <div key={pImg.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
-                <img
+                <ProgressiveImage
                   src={pImg.src}
                   alt={`${project.title} portrait ${pIdx + 1}`}
-                  loading={isTopCard ? 'eager' : 'lazy'}
+                  aspectRatio={pImg.aspectRatio}
+                  loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+                  isCardPreview={true}
+                  className="group-hover/card:scale-[1.02] transition-transform duration-700"
                 />
               </div>
             ))}
@@ -109,16 +116,18 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
 
           {/* Right: Key Hero Visual (7 cols) */}
           <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
-            <img
+            <ProgressiveImage
               src={heroImg.src}
               alt={`${project.title} hero`}
+              aspectRatio={heroImg.aspectRatio}
               loading={isTopCard ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={index === 0 ? 'high' : 'auto'}
-              className="w-full h-full object-contain filter brightness-[0.95] group-hover/card:scale-[1.02] transition-transform duration-700"
+              isCardPreview={true}
+              className="group-hover/card:scale-[1.02] transition-transform duration-700"
             />
             {moreCount > 0 && (
-              <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full pointer-events-none">
+              <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full pointer-events-none z-10">
                 <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] text-[#C8C1B5]">
                   +{moreCount} MORE SHOTS
                 </span>
@@ -139,24 +148,28 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
         {/* Left: Two Stacked Images (5 cols) */}
         <div className="hidden lg:grid lg:col-span-5 grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
           <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
-            <img
+            <ProgressiveImage
               src={leftTop.src}
               alt={`${project.title} detail 1`}
-              loading={isTopCard ? 'eager' : 'lazy'}
+              aspectRatio={leftTop.aspectRatio}
+              loading="lazy"
               decoding="async"
-              className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+              isCardPreview={true}
+              className="group-hover/card:scale-[1.02] transition-transform duration-700"
             />
           </div>
           <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
-            <img
+            <ProgressiveImage
               src={leftBottom.src}
               alt={`${project.title} detail 2`}
-              loading={isTopCard ? 'eager' : 'lazy'}
+              aspectRatio={leftBottom.aspectRatio}
+              loading="lazy"
               decoding="async"
-              className="w-full h-full object-contain filter brightness-[0.9] group-hover/card:scale-[1.02] transition-transform duration-700"
+              isCardPreview={true}
+              className="group-hover/card:scale-[1.02] transition-transform duration-700"
             />
             {moreCount > 0 && (
-              <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full pointer-events-none">
+              <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full pointer-events-none z-10">
                 <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#C8C1B5] font-medium">
                   +{moreCount} MORE SHOTS
                 </span>
@@ -167,13 +180,15 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
 
         {/* Right: One Large Hero Image (7 cols) */}
         <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
-          <img
+          <ProgressiveImage
             src={rightHero.src}
             alt={`${project.title} hero`}
+            aspectRatio={rightHero.aspectRatio}
             loading={isTopCard ? 'eager' : 'lazy'}
             decoding="async"
             fetchPriority={index === 0 ? 'high' : 'auto'}
-            className="w-full h-full object-contain filter brightness-[0.95] group-hover/card:scale-[1.02] transition-transform duration-700"
+            isCardPreview={true}
+            className="group-hover/card:scale-[1.02] transition-transform duration-700"
           />
         </div>
       </div>

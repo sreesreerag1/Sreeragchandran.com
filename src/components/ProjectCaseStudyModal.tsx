@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { PortfolioProject, ProjectImageItem } from '../data/portfolioProjects';
+import { ProgressiveImage } from './ProgressiveImage';
 
 interface ProjectCaseStudyModalProps {
   project: PortfolioProject | null;
@@ -58,6 +59,32 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
   const heroImage = project?.galleryImages[0];
   const remainingImages = project?.galleryImages.slice(1) || [];
 
+  // Progressive collage rendering: show initial batch first, then stream remaining images as user scrolls
+  const [visibleCount, setVisibleCount] = useState(4);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setVisibleCount(4);
+  }, [project?.id, project?.slug]);
+
+  useEffect(() => {
+    if (!project || visibleCount >= remainingImages.length) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 4, remainingImages.length));
+        }
+      },
+      { rootMargin: '450px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [project, remainingImages.length, visibleCount]);
+
   // Helper to render uncropped gallery images with full-screen editorial rhythm
   const renderEditorialGallery = (images: ProjectImageItem[]) => {
     const title = project?.title || 'Project';
@@ -73,12 +100,14 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         elements.push(
           <div key={current.id} className="col-span-12 w-full">
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-[#080808] shadow-2xl flex items-center justify-center p-2 sm:p-4 md:p-6 group">
-              <img
+              <ProgressiveImage
                 src={current.src}
                 alt={`${title} - ${current.filename}`}
+                aspectRatio={current.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[92vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[92vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -92,21 +121,25 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         elements.push(
           <div key={`pair-${current.id}-${next.id}`} className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10 items-stretch">
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
-              <img
+              <ProgressiveImage
                 src={current.src}
                 alt={`${title} - ${current.filename}`}
+                aspectRatio={current.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
-              <img
+              <ProgressiveImage
                 src={next.src}
                 alt={`${title} - ${next.filename}`}
+                aspectRatio={next.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -120,21 +153,25 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         elements.push(
           <div key={`asym-${current.id}-${next.id}`} className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 md:gap-10 items-stretch">
             <div className="md:col-span-5 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
-              <img
+              <ProgressiveImage
                 src={current.src}
                 alt={`${title} - ${current.filename}`}
+                aspectRatio={current.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
             <div className="md:col-span-7 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
-              <img
+              <ProgressiveImage
                 src={next.src}
                 alt={`${title} - ${next.filename}`}
+                aspectRatio={next.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -147,21 +184,25 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         elements.push(
           <div key={`asym-${current.id}-${next.id}`} className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 md:gap-10 items-stretch">
             <div className="md:col-span-7 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
-              <img
+              <ProgressiveImage
                 src={current.src}
                 alt={`${title} - ${current.filename}`}
+                aspectRatio={current.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
             <div className="md:col-span-5 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
-              <img
+              <ProgressiveImage
                 src={next.src}
                 alt={`${title} - ${next.filename}`}
+                aspectRatio={next.aspectRatio}
                 loading="lazy"
                 decoding="async"
-                className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                isCardPreview={false}
+                className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
               />
             </div>
           </div>
@@ -178,21 +219,25 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
       elements.push(
         <div key={`pair-${current.id}-${next.id}`} className="col-span-12 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 md:gap-10 items-stretch">
           <div className={`${leftCol} w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group`}>
-            <img
+            <ProgressiveImage
               src={current.src}
               alt={`${title} - ${current.filename}`}
+              aspectRatio={current.aspectRatio}
               loading="lazy"
               decoding="async"
-              className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+              isCardPreview={false}
+              className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
             />
           </div>
           <div className={`${rightCol} w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group`}>
-            <img
+            <ProgressiveImage
               src={next.src}
               alt={`${title} - ${next.filename}`}
+              aspectRatio={next.aspectRatio}
               loading="lazy"
               decoding="async"
-              className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+              isCardPreview={false}
+              className="max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
             />
           </div>
         </div>
@@ -290,22 +335,36 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             {heroImage && (
               <section className="w-full">
                 <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-[#080808] shadow-2xl flex items-center justify-center p-2 sm:p-4 md:p-6">
-                  <img
+                  <ProgressiveImage
                     src={heroImage.src}
                     alt={`${project.title} - ${heroImage.filename}`}
+                    aspectRatio={heroImage.aspectRatio}
                     loading="eager"
                     decoding="async"
-                    className="w-full max-h-[92vh] h-auto object-contain mx-auto"
+                    fetchPriority="high"
+                    isCardPreview={false}
+                    className="max-h-[92vh] h-auto object-contain mx-auto"
                   />
                 </div>
               </section>
             )}
 
-            {/* 2. Editorial Gallery of all remaining non-thumbnail images (Full Width, Uncropped) */}
+            {/* 2. Editorial Gallery of all remaining non-thumbnail images (Progressive Streamed Rows) */}
             {remainingImages.length > 0 && (
               <section className="w-full flex flex-col gap-8 md:gap-12">
                 <div className="grid grid-cols-12 gap-6 sm:gap-8 md:gap-10 items-stretch">
-                  {renderEditorialGallery(remainingImages)}
+                  {renderEditorialGallery(remainingImages.slice(0, visibleCount))}
+                  {visibleCount < remainingImages.length && (
+                    <div
+                      ref={sentinelRef}
+                      className="col-span-12 w-full min-h-[140px] rounded-xl md:rounded-2xl border border-white/5 bg-[#080808]/40 animate-pulse flex items-center justify-center p-6"
+                    >
+                      <div className="flex items-center gap-2.5 font-mono text-[10px] tracking-[0.2em] text-white/35 uppercase">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-white/40 animate-ping" />
+                        <span>Streaming gallery assets...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './sections/HeroSection';
 import MarqueeGallery from './sections/MarqueeGallery';
@@ -6,9 +6,16 @@ import ServicesSection from './sections/ServicesSection';
 import ProjectsDarkSection from './sections/ProjectsDarkSection';
 import Footer from './sections/Footer';
 import Preloader from './components/Preloader';
+import { preloadGalleryAssets } from './utils/galleryPreloader';
 
 export const App: React.FC = () => {
   const [isSiteLoaded, setIsSiteLoaded] = useState(false);
+
+  useEffect(() => {
+    if (isSiteLoaded) {
+      preloadGalleryAssets();
+    }
+  }, [isSiteLoaded]);
 
   return (
     <div className="relative min-h-screen bg-[#050505] text-[#F5F5F2] selection:bg-[#C8C1B5]/30 selection:text-[#F5F5F2] overflow-x-clip font-sans">
