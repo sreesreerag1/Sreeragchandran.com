@@ -31,11 +31,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
   const images = project.galleryImages;
 
   const renderCardCollage = () => {
-    if (!images || images.length === 0) return null;
-
-    const primary = images[0];
-    const secondary = images[1];
-    const tertiary = images[2];
+    const thumbSrc = project.thumbnail;
     const moreCount = images.length > 3 ? images.length - 3 : 0;
 
     // Case A: Square-dominant projects (e.g. ACTIVE & EARN, PHOTO CAMPAIGN)
@@ -43,23 +39,22 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
     if (isSquareDominant && images.length >= 3) {
       return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
-          {/* Left: Featured Large Square (6 cols) */}
+          {/* Left: Featured Large Square (6 cols) displaying project thumbnail */}
           <div className="lg:col-span-6 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
             <ProgressiveImage
-              src={primary.src}
+              src={thumbSrc}
               alt={`${project.title} featured`}
-              aspectRatio={primary.aspectRatio}
+              aspectRatio={1}
               loading={isTopCard ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={index === 0 ? 'high' : 'auto'}
-              isCardPreview={true}
               className="group-hover/card:scale-[1.02] transition-transform duration-700"
             />
           </div>
 
           {/* Right: Supporting Grid of detail squares (6 cols) */}
           <div className="hidden lg:grid lg:col-span-6 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
-            {images.slice(1, 5).map((img, i) => (
+            {images.slice(0, 4).map((img, i) => (
               <div key={img.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
                 <ProgressiveImage
                   src={img.src}
@@ -67,13 +62,12 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
                   aspectRatio={img.aspectRatio}
                   loading="lazy"
                   decoding="async"
-                  isCardPreview={true}
                   className="group-hover/card:scale-[1.02] transition-transform duration-700"
                 />
-                {i === 3 && images.length > 5 && (
+                {i === 3 && images.length > 4 && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10">
                     <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#F5F5F2] font-semibold">
-                      +{images.length - 5} MORE
+                      +{images.length - 4} MORE
                     </span>
                   </div>
                 )}
@@ -85,15 +79,9 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
     }
 
     // Case B: Portrait-rich projects (e.g. BEING HUMAN, SIP FRESH FEEL ALIVE)
-    // Requires at least 2 portraits so the left 2-column grid is completely filled without empty voids
     const portraitImages = images.filter((img) => img.orientation === 'portrait');
-    if (portraitImages.length >= 2 && images.length >= 3) {
-      const landscapeImages = images.filter((img) => img.orientation !== 'portrait');
+    if (portraitImages.length >= 2 && images.length >= 2) {
       const portraitsToDisplay = portraitImages.slice(0, 2);
-      const heroImg =
-        landscapeImages.length > 0
-          ? landscapeImages[0]
-          : images.find((img) => !portraitsToDisplay.some((p) => p.id === img.id)) || primary;
 
       return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
@@ -107,23 +95,21 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
                   aspectRatio={pImg.aspectRatio}
                   loading="lazy"
                   decoding="async"
-                  isCardPreview={true}
                   className="group-hover/card:scale-[1.02] transition-transform duration-700"
                 />
               </div>
             ))}
           </div>
 
-          {/* Right: Key Hero Visual (7 cols) */}
+          {/* Right: Key Hero Visual (7 cols) displaying project thumbnail */}
           <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
             <ProgressiveImage
-              src={heroImg.src}
+              src={thumbSrc}
               alt={`${project.title} hero`}
-              aspectRatio={heroImg.aspectRatio}
+              aspectRatio={1.5}
               loading={isTopCard ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={index === 0 ? 'high' : 'auto'}
-              isCardPreview={true}
               className="group-hover/card:scale-[1.02] transition-transform duration-700"
             />
             {moreCount > 0 && (
@@ -139,55 +125,55 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
     }
 
     // Case C: Standard Landscape-Dominant projects (Default editorial layout)
-    const leftTop = secondary || primary;
-    const leftBottom = tertiary || secondary || primary;
-    const rightHero = primary;
+    const leftTop = images[0];
+    const leftBottom = images[1] || images[0];
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
-        {/* Left: Two Stacked Images (5 cols) */}
+        {/* Left: Two Stacked Detail Images (5 cols) */}
         <div className="hidden lg:grid lg:col-span-5 grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
-            <ProgressiveImage
-              src={leftTop.src}
-              alt={`${project.title} detail 1`}
-              aspectRatio={leftTop.aspectRatio}
-              loading="lazy"
-              decoding="async"
-              isCardPreview={true}
-              className="group-hover/card:scale-[1.02] transition-transform duration-700"
-            />
-          </div>
-          <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
-            <ProgressiveImage
-              src={leftBottom.src}
-              alt={`${project.title} detail 2`}
-              aspectRatio={leftBottom.aspectRatio}
-              loading="lazy"
-              decoding="async"
-              isCardPreview={true}
-              className="group-hover/card:scale-[1.02] transition-transform duration-700"
-            />
-            {moreCount > 0 && (
-              <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full pointer-events-none z-10">
-                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#C8C1B5] font-medium">
-                  +{moreCount} MORE SHOTS
-                </span>
-              </div>
-            )}
-          </div>
+          {leftTop && (
+            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
+              <ProgressiveImage
+                src={leftTop.src}
+                alt={`${project.title} detail 1`}
+                aspectRatio={leftTop.aspectRatio}
+                loading="lazy"
+                decoding="async"
+                className="group-hover/card:scale-[1.02] transition-transform duration-700"
+              />
+            </div>
+          )}
+          {leftBottom && (
+            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
+              <ProgressiveImage
+                src={leftBottom.src}
+                alt={`${project.title} detail 2`}
+                aspectRatio={leftBottom.aspectRatio}
+                loading="lazy"
+                decoding="async"
+                className="group-hover/card:scale-[1.02] transition-transform duration-700"
+              />
+              {moreCount > 0 && (
+                <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full pointer-events-none z-10">
+                  <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#C8C1B5] font-medium">
+                    +{moreCount} MORE SHOTS
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Right: One Large Hero Image (7 cols) */}
+        {/* Right: One Large Hero Image (7 cols) displaying project thumbnail */}
         <div className="lg:col-span-7 h-full min-h-0 relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2 sm:p-4">
           <ProgressiveImage
-            src={rightHero.src}
+            src={thumbSrc}
             alt={`${project.title} hero`}
-            aspectRatio={rightHero.aspectRatio}
+            aspectRatio={1.5}
             loading={isTopCard ? 'eager' : 'lazy'}
             decoding="async"
             fetchPriority={index === 0 ? 'high' : 'auto'}
-            isCardPreview={true}
             className="group-hover/card:scale-[1.02] transition-transform duration-700"
           />
         </div>

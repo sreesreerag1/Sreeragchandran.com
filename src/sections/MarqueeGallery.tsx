@@ -130,6 +130,10 @@ export const MarqueeGallery: React.FC = () => {
                     src={item.thumbnail}
                     alt={`${item.title} - ${item.subtitle}`}
                     loading="lazy"
+                    onError={(e) => {
+                      console.warn('Failed to load image:', item.thumbnail);
+                      e.currentTarget.src = '/fallback-image.jpg';
+                    }}
                     className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02] filter brightness-[0.92] group-hover:brightness-100"
                   />
                 </div>
@@ -189,6 +193,10 @@ export const MarqueeGallery: React.FC = () => {
                     src={item.thumbnail}
                     alt={`${item.title} - ${item.subtitle}`}
                     loading="lazy"
+                    onError={(e) => {
+                      console.warn('Failed to load image:', item.thumbnail);
+                      e.currentTarget.src = '/fallback-image.jpg';
+                    }}
                     className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02] filter brightness-[0.92] group-hover:brightness-100"
                   />
                 </div>

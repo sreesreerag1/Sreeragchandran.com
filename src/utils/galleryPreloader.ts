@@ -24,16 +24,12 @@ function preloadSingleImage(url: string): Promise<void> {
  * Returns the best progressive URL for an image path:
  * Prefers the 800px AVIF variant if available, falling back to 800px JPG.
  */
-export function getOptimizedImageUrl(src: string, isThumbnail: boolean = true): string {
-  if (!src || !src.endsWith('.jpg')) return src;
-  const base = src.replace(/\.jpg$/, '');
-  return isThumbnail ? `${base}-800.avif` : `${base}.avif`;
+export function getOptimizedImageUrl(src: string): string {
+  return src;
 }
 
-export function getFallbackImageUrl(src: string, isThumbnail: boolean = true): string {
-  if (!src || !src.endsWith('.jpg')) return src;
-  const base = src.replace(/\.jpg$/, '');
-  return isThumbnail ? `${base}-800.jpg` : src;
+export function getFallbackImageUrl(src: string): string {
+  return src;
 }
 
 let hasStarted = false;
@@ -54,10 +50,11 @@ export function preloadGalleryAssets(): void {
   scheduleTask(() => {
     const topProjects = PORTFOLIO_PROJECTS.slice(0, 3);
     topProjects.forEach((p) => {
-      const primary = p.galleryImages[0]?.src || p.thumbnail;
-      if (primary) {
-        preloadSingleImage(getOptimizedImageUrl(primary, true));
-        preloadSingleImage(getFallbackImageUrl(primary, true));
+      if (p.thumbnail) {
+        preloadSingleImage(p.thumbnail);
+      }
+      if (p.galleryImages[0]?.src) {
+        preloadSingleImage(p.galleryImages[0].src);
       }
     });
 
@@ -66,16 +63,15 @@ export function preloadGalleryAssets(): void {
       const firstTwo = PORTFOLIO_PROJECTS.slice(0, 2);
       firstTwo.forEach((p) => {
         p.galleryImages.slice(1, 4).forEach((img) => {
-          preloadSingleImage(getOptimizedImageUrl(img.src, true));
+          preloadSingleImage(img.src);
         });
       });
 
       // Phase 3: Remaining cards primary thumbnails
       scheduleTask(() => {
         PORTFOLIO_PROJECTS.slice(3).forEach((p) => {
-          const primary = p.galleryImages[0]?.src || p.thumbnail;
-          if (primary) {
-            preloadSingleImage(getOptimizedImageUrl(primary, true));
+          if (p.thumbnail) {
+            preloadSingleImage(p.thumbnail);
           }
         });
       }, 3000);

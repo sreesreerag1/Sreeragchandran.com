@@ -1,0 +1,730 @@
+{
+  "DB11 Campaign _Aston Martin ": {
+    "order": 1,
+    "disciplines": [
+      "Creative Direction",
+      "Campaign Design"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Tashgeel Media and Advertising WLL. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1536,
+        "height": 1014,
+        "aspectRatio": 1.515,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1672,
+        "height": 941,
+        "aspectRatio": 1.777,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1672,
+        "height": 941,
+        "aspectRatio": 1.777,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1672,
+        "height": 941,
+        "aspectRatio": 1.777,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "WCEMS_NCEMA": {
+    "order": 2,
+    "disciplines": [
+      "Creative Direction",
+      "Experience Design"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "5.jpg": {
+        "width": 1920,
+        "height": 1281,
+        "aspectRatio": 1.499,
+        "orientation": "landscape"
+      },
+      "6.jpg": {
+        "width": 1920,
+        "height": 1281,
+        "aspectRatio": 1.499,
+        "orientation": "landscape"
+      },
+      "7.jpg": {
+        "width": 1920,
+        "height": 1281,
+        "aspectRatio": 1.499,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "A2RL ACTIVATION _Yas Mall": {
+    "order": 3,
+    "disciplines": [
+      "Experience Design",
+      "Spatial Brand"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "5.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "6.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "ABU DHABI AI SUMMIT_TII": {
+    "order": 4,
+    "disciplines": [
+      "Creative Direction",
+      "Visual Identity"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 2000,
+        "height": 1232,
+        "aspectRatio": 1.623,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "ACTIVE & EARN_Yourfitness. Coach": {
+    "order": 5,
+    "disciplines": [
+      "Brand Systems",
+      "Campaign Design"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "2.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "3.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "4.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "5.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "6.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "7.jpg": {
+        "width": 1015,
+        "height": 1024,
+        "aspectRatio": 0.991,
+        "orientation": "square"
+      },
+      "8.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "9.jpg": {
+        "width": 1024,
+        "height": 1024,
+        "aspectRatio": 1,
+        "orientation": "square"
+      }
+    }
+  },
+  "AI71 LAUNCH_ATRC": {
+    "order": 6,
+    "disciplines": [
+      "Creative Direction",
+      "Experience Design"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 2000,
+        "height": 1333,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 2000,
+        "height": 1333,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "5.jpg": {
+        "width": 1333,
+        "height": 2000,
+        "aspectRatio": 0.666,
+        "orientation": "portrait"
+      },
+      "6.jpg": {
+        "width": 2000,
+        "height": 715,
+        "aspectRatio": 2.797,
+        "orientation": "landscape"
+      },
+      "7.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "8.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "ANNUAL GATHERING_RTA Dubai": {
+    "order": 7,
+    "disciplines": [
+      "Spatial Architecture",
+      "Storytelling"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 2000,
+        "height": 1333,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "5.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "6.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "7.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "BEING HUMAN_Personal exhibition": {
+    "order": 8,
+    "disciplines": [
+      "Art Direction",
+      "Exhibition Design"
+    ],
+    "copyright": "Copyright reserved to Sreerag Chandran.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1600,
+        "height": 736,
+        "aspectRatio": 2.174,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1504,
+        "height": 1004,
+        "aspectRatio": 1.498,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1504,
+        "height": 1004,
+        "aspectRatio": 1.498,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1360,
+        "height": 2000,
+        "aspectRatio": 0.68,
+        "orientation": "portrait"
+      },
+      "5.jpg": {
+        "width": 1080,
+        "height": 1692,
+        "aspectRatio": 0.638,
+        "orientation": "portrait"
+      },
+      "6.jpg": {
+        "width": 1306,
+        "height": 1920,
+        "aspectRatio": 0.68,
+        "orientation": "portrait"
+      },
+      "7.jpg": {
+        "width": 1238,
+        "height": 1920,
+        "aspectRatio": 0.645,
+        "orientation": "portrait"
+      },
+      "8.jpg": {
+        "width": 1278,
+        "height": 1920,
+        "aspectRatio": 0.666,
+        "orientation": "portrait"
+      },
+      "9.jpg": {
+        "width": 1173,
+        "height": 1920,
+        "aspectRatio": 0.611,
+        "orientation": "portrait"
+      }
+    }
+  },
+  "EFIICA AWARDS_Abu Dhabi Islamic Bank": {
+    "order": 9,
+    "disciplines": [
+      "Brand Systems",
+      "Event Identity"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "EXHIBITIN STANDS_Various Projects": {
+    "order": 10,
+    "disciplines": [
+      "Spatial Design",
+      "Brand Experience"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Tashgeel Media and Advertising WLL. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "5.jpg": {
+        "width": 1400,
+        "height": 1400,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "6.jpg": {
+        "width": 1400,
+        "height": 1400,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "7.jpg": {
+        "width": 1400,
+        "height": 1400,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "8.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "9.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "10.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "11.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      },
+      "12.jpg": {
+        "width": 1400,
+        "height": 933,
+        "aspectRatio": 1.501,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "GENERATION READINESS_ NCEMA": {
+    "order": 11,
+    "disciplines": [
+      "Creative Strategy",
+      "Editorial Design"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1281,
+        "aspectRatio": 1.499,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1920,
+        "height": 1281,
+        "aspectRatio": 1.499,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1879,
+        "height": 1057,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1281,
+        "aspectRatio": 1.499,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "NATIONAL DAY EVENT_Abu Dhabi National Bank": {
+    "order": 12,
+    "disciplines": [
+      "Experience Design",
+      "Creative Direction"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1280,
+        "aspectRatio": 1.5,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "PHOTO CAMPAIGN_Yourfitness.coach": {
+    "order": 13,
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 2000,
+        "height": 1918,
+        "aspectRatio": 1.043,
+        "orientation": "square"
+      },
+      "2.jpg": {
+        "width": 2000,
+        "height": 2000,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "3.jpg": {
+        "width": 2000,
+        "height": 2000,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "4.jpg": {
+        "width": 2000,
+        "height": 2000,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "5.jpg": {
+        "width": 2000,
+        "height": 2000,
+        "aspectRatio": 1,
+        "orientation": "square"
+      },
+      "6.jpg": {
+        "width": 2000,
+        "height": 2000,
+        "aspectRatio": 1,
+        "orientation": "square"
+      }
+    }
+  },
+  "SEF_Sheraa": {
+    "order": 14,
+    "disciplines": [
+      "Creative Direction",
+      "Brand Activation"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "3.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "4.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "5.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "6.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "7.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "8.jpg": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      },
+      "9.jpg": {
+        "width": 1280,
+        "height": 720,
+        "aspectRatio": 1.778,
+        "orientation": "landscape"
+      }
+    }
+  },
+  "SIP FRESH FEEL ALIVE_Amazon float": {
+    "order": 15,
+    "disciplines": [
+      "Creative Campaigns",
+      "Brand Activation"
+    ],
+    "copyright": "Creative work shown here was produced during my time with Tashgeel Media and Advertising WLL. All project ownership and image copyrights remain with the company.",
+    "imagesMeta": {
+      "1.jpg": {
+        "width": 1672,
+        "height": 941,
+        "aspectRatio": 1.777,
+        "orientation": "landscape"
+      },
+      "2.jpg": {
+        "width": 1024,
+        "height": 1536,
+        "aspectRatio": 0.667,
+        "orientation": "portrait"
+      },
+      "3.jpg": {
+        "width": 1024,
+        "height": 1536,
+        "aspectRatio": 0.667,
+        "orientation": "portrait"
+      },
+      "4.jpg": {
+        "width": 1024,
+        "height": 1536,
+        "aspectRatio": 0.667,
+        "orientation": "portrait"
+      },
+      "5.jpg": {
+        "width": 1024,
+        "height": 1536,
+        "aspectRatio": 0.667,
+        "orientation": "portrait"
+      },
+      "7.jpg": {
+        "width": 1024,
+        "height": 1536,
+        "aspectRatio": 0.667,
+        "orientation": "portrait"
+      },
+      "8.jpg": {
+        "width": 1024,
+        "height": 1536,
+        "aspectRatio": 0.667,
+        "orientation": "portrait"
+      }
+    }
+  }
+}
