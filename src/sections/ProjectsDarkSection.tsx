@@ -197,19 +197,33 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
       >
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 md:pb-6 border-b border-white/[0.15] shrink-0">
-          {/* LEFT: Project Number + TITLE + SUBHEADING */}
+          {/* LEFT: Project Number + SUBTITLE + TITLE + DISCIPLINES */}
           <div className="flex items-baseline gap-4 sm:gap-6 min-w-0">
             <span className="font-kanit text-2xl sm:text-3xl md:text-4xl font-light text-white/[0.2] shrink-0">
               {String(index + 1).padStart(2, '0')}
             </span>
             <div className="min-w-0">
+              {project.subtitle && (
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#A6A6A6] block truncate mb-1">
+                  {project.subtitle}
+                </span>
+              )}
               <h3 className="font-kanit font-medium text-xl sm:text-2xl md:text-3xl tracking-tight uppercase text-[#F5F5F2] group-hover/card:text-[#C8C1B5] transition-colors truncate">
                 {project.title}
               </h3>
-              {project.subtitle && (
-                <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[#A6A6A6] block mt-0.5 truncate">
-                  {project.subtitle}
-                </span>
+              {project.disciplines && project.disciplines.length > 0 && (
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  {project.disciplines.map((discipline, dIdx) => (
+                    <React.Fragment key={discipline}>
+                      <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.14em] text-[#C8C1B5]/80 font-normal">
+                        {discipline}
+                      </span>
+                      {dIdx < project.disciplines!.length - 1 && (
+                        <span className="text-white/20 text-[9px] select-none">•</span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
               )}
             </div>
           </div>

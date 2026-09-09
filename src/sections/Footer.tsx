@@ -86,10 +86,10 @@ export const Footer: React.FC = () => {
               Core Disciplines
             </span>
             <ul className="font-sans text-sm text-[#A6A6A6] font-light space-y-1.5">
-              <li className="hover:text-white transition-colors cursor-default">01 Brand Identity</li>
-              <li className="hover:text-white transition-colors cursor-default">02 Experiential Concepts</li>
-              <li className="hover:text-white transition-colors cursor-default">03 Campaign Ideation</li>
-              <li className="hover:text-white transition-colors cursor-default">04 Visual Narrative</li>
+              <li className="hover:text-white transition-colors cursor-default">01 Brand Systems</li>
+              <li className="hover:text-white transition-colors cursor-default">02 Experience Design</li>
+              <li className="hover:text-white transition-colors cursor-default">03 Creative Campaigns</li>
+              <li className="hover:text-white transition-colors cursor-default">04 Storytelling & Content</li>
               <li className="hover:text-white transition-colors cursor-default">05 Creative Direction</li>
             </ul>
           </div>

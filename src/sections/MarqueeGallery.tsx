@@ -93,12 +93,12 @@ export const MarqueeGallery: React.FC = () => {
           </div>
 
           <Reveal delay={180}>
-            <div className="flex flex-col md:text-right max-w-xs">
+            <div className="flex flex-col md:text-right max-w-sm">
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#707070] font-semibold mb-1">
                 PORTFOLIO ARCHIVE
               </span>
               <p className="font-sans text-xs sm:text-sm text-[#A6A6A6] font-light leading-relaxed">
-                Ideas brought to life.
+                Curated projects spanning brand systems, live activations, and visual storytelling.
               </p>
             </div>
           </Reveal>
@@ -141,16 +141,16 @@ export const MarqueeGallery: React.FC = () => {
                 <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end text-white pointer-events-none">
                   <div className="flex items-end justify-between gap-3">
                     <div className="flex flex-col min-w-0 pr-2">
+                      {/* Project Subheading / Brand */}
+                      {item.subtitle && (
+                        <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#A6A6A6] truncate font-normal mb-1">
+                          {item.subtitle}
+                        </span>
+                      )}
                       {/* Project Title: Primary typography */}
                       <h3 className="font-kanit font-medium text-sm sm:text-base md:text-lg uppercase tracking-wider text-[#F5F5F2] leading-snug truncate">
                         {item.title}
                       </h3>
-                      {/* Project Subheading: Smaller secondary typography */}
-                      {item.subtitle && (
-                        <span className="font-sans text-[11px] sm:text-xs text-[#A6A6A6] tracking-wide mt-0.5 truncate font-normal">
-                          {item.subtitle}
-                        </span>
-                      )}
                     </div>
 
                     {/* Minimal hover indicator: VIEW PROJECT → (only shown on hover) */}
@@ -200,16 +200,16 @@ export const MarqueeGallery: React.FC = () => {
                 <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end text-white pointer-events-none">
                   <div className="flex items-end justify-between gap-3">
                     <div className="flex flex-col min-w-0 pr-2">
+                      {/* Project Subheading / Brand */}
+                      {item.subtitle && (
+                        <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#A6A6A6] truncate font-normal mb-1">
+                          {item.subtitle}
+                        </span>
+                      )}
                       {/* Project Title: Primary typography */}
                       <h3 className="font-kanit font-medium text-sm sm:text-base md:text-lg uppercase tracking-wider text-[#F5F5F2] leading-snug truncate">
                         {item.title}
                       </h3>
-                      {/* Project Subheading: Smaller secondary typography */}
-                      {item.subtitle && (
-                        <span className="font-sans text-[11px] sm:text-xs text-[#A6A6A6] tracking-wide mt-0.5 truncate font-normal">
-                          {item.subtitle}
-                        </span>
-                      )}
                     </div>
 
                     {/* Minimal hover indicator: VIEW PROJECT → (only shown on hover) */}

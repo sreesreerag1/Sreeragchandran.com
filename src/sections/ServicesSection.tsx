@@ -14,21 +14,21 @@ interface ServiceData {
 const SERVICES: ServiceData[] = [
   {
     number: '01',
-    title: 'BRAND IDENTITY',
-    subtitle: 'Creating distinctive visual identities that give brands a clear and memorable presence.',
+    title: 'BRAND SYSTEMS',
+    subtitle: 'Engineering cohesive visual ecosystems that build enduring brand equity across platforms.',
     description:
-      'From foundational visual systems to high-touch brand collateral, I build distinctive, coherent identities designed to give brands an enduring, commanding market presence across all cultural touchpoints.',
+      'From foundational visual architectures to high-touch brand touchpoints, I direct comprehensive design systems engineered to give global brands an authoritative, unforgettable market presence across digital, physical, and cultural spheres.',
     deliverables: [
-      'Comprehensive Visual Systems',
-      'Bespoke Typographic Design',
-      'Brand Architecture & Guidelines',
-      'Packaging & Physical Collateral',
+      'Design Systems & Architecture',
+      'Bespoke Typographic Systems',
+      'Brand Strategy & Guidelines',
+      'Packaging & Physical Touchpoints',
     ],
   },
   {
     number: '02',
-    title: 'EXPERIENTIAL CONCEPTS',
-    subtitle: 'Creating original concepts that transform spaces, events and interactions into memorable experiences.',
+    title: 'EXPERIENCE DESIGN',
+    subtitle: 'Transforming physical spaces, stage architectures, and live environments into immersive brand worlds.',
     description:
       'Conceiving spatial environments, live stages, interactive pavilions, and brand activations that dissolve the barrier between audience and space, turning physical gatherings into unforgettable communal memories.',
     deliverables: [
@@ -40,34 +40,34 @@ const SERVICES: ServiceData[] = [
   },
   {
     number: '03',
-    title: 'CAMPAIGN IDEATION',
-    subtitle: 'Turning insights into strong creative ideas that connect with audiences across multiple touchpoints.',
+    title: 'CREATIVE CAMPAIGNS',
+    subtitle: 'Synthesizing strategic insights into multidisciplinary campaign concepts that command cultural conversation.',
     description:
       'Distilling strategic brand objectives into arresting conceptual hooks and 360-degree creative campaigns that capture cultural attention and spark conversations across digital, broadcast, and physical mediums.',
     deliverables: [
-      '360° Creative Campaign Concepts',
-      'Transmedia Storytelling Arcs',
-      'Cultural Activation Frameworks',
+      '360° Creative Campaign Direction',
+      'Transmedia Conceptual Frameworks',
+      'Cultural Activation Strategy',
       'Cross-Platform Creative Strategy',
     ],
   },
   {
     number: '04',
-    title: 'VISUAL NARRATIVE',
-    subtitle: 'Translating ideas into compelling visual stories, from the first frame to the final execution.',
+    title: 'STORYTELLING & CONTENT',
+    subtitle: 'Directing cinematic visual narratives and motion aesthetics with striking emotional clarity.',
     description:
       'Directing cinematic visual worlds, key visuals, motion aesthetics, and storyboards that articulate complex emotional narratives with striking visual clarity and artistic rigor.',
     deliverables: [
-      'Key Visuals & Hero Stills',
-      'Motion Aesthetics & Treatment',
-      'Film & Content Storyboards',
-      'Art Direction & World-Building',
+      'Key Visuals & World-Building',
+      'Motion Aesthetics & Direction',
+      'Cinematic Film Treatments',
+      'Editorial Content Strategy',
     ],
   },
   {
     number: '05',
     title: 'CREATIVE DIRECTION',
-    subtitle: 'Leading the creative vision from concept to execution, ensuring every element works as one cohesive idea.',
+    subtitle: 'Orchestrating end-to-end creative vision with uncompromising aesthetic standards.',
     description:
       'Guiding multidisciplinary teams, agencies, and production partners with uncompromising artistic standards, ensuring every detail from initial pitch to final delivery adheres to one cohesive, elevated vision.',
     deliverables: [
@@ -108,10 +108,10 @@ export const ServicesSection: React.FC = () => {
           <Reveal delay={180}>
             <div className="flex flex-col md:text-right max-w-sm">
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#707070] font-semibold mb-1">
-                CREATIVE STRENGTHS
+                CORE DISCIPLINES
               </span>
               <p className="font-sans text-xs sm:text-sm text-[#A6A6A6] font-light leading-relaxed">
-                Strategic vision executed across five core creative strengths.
+                Strategic vision executed across five core disciplines.
               </p>
             </div>
           </Reveal>
@@ -125,7 +125,7 @@ export const ServicesSection: React.FC = () => {
             return (
               <motion.div
                 key={service.number}
-                initial={{ opacity: 0, y: 35 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.6, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}

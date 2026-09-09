@@ -11,12 +11,40 @@ const NAV_LINKS = [
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
+      const scrollY = window.scrollY || window.pageYOffset;
+      setScrolled(scrollY > 40);
+
+      const contactElem = document.getElementById('contact');
+      const projectsElem = document.getElementById('projects');
+      const whatIDoElem = document.getElementById('what-i-do') || document.getElementById('services');
+      const worksElem = document.getElementById('works');
+
+      const contactTop = contactElem ? contactElem.offsetTop - 380 : 999999;
+      const projectsTop = projectsElem ? projectsElem.offsetTop - 280 : 999999;
+      const whatIDoTop = whatIDoElem ? whatIDoElem.offsetTop - 280 : 999999;
+      const worksTop = worksElem ? worksElem.offsetTop - 280 : 999999;
+
+      if (scrollY >= contactTop) {
+        setActiveSection('#contact');
+      } else if (scrollY >= projectsTop) {
+        setActiveSection('#works');
+      } else if (scrollY >= whatIDoTop) {
+        setActiveSection('#what-i-do');
+      } else if (scrollY >= worksTop) {
+        setActiveSection('#works');
+      } else if (scrollY > 600) {
+        setActiveSection('#philosophy');
+      } else {
+        setActiveSection('');
+      }
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -69,19 +97,32 @@ export const Navbar: React.FC = () => {
 
         {/* Center Nav Links: Work, About, What I Do, Contact */}
         <div className="hidden md:flex items-center gap-7 lg:gap-10">
-          {NAV_LINKS.map((link, index) => (
-            <Reveal key={link.label} delay={100 + index * 80}>
-              <Magnetic strength={0.22} maxOffset={4}>
-                <a
-                  href={link.href}
-                  onClick={(e) => handleNavClick(e, link.href)}
-                  className="font-sans text-xs uppercase tracking-[0.16em] text-white hover:text-white/80 font-medium transition-colors duration-300 py-1 px-2 block"
-                >
-                  {link.label}
-                </a>
-              </Magnetic>
-            </Reveal>
-          ))}
+          {NAV_LINKS.map((link, index) => {
+            const isActive = activeSection === link.href;
+
+            return (
+              <Reveal key={link.label} delay={100 + index * 80}>
+                <Magnetic strength={0.22} maxOffset={4}>
+                  <a
+                    href={link.href}
+                    onClick={(e) => handleNavClick(e, link.href)}
+                    className={`relative font-sans text-xs uppercase tracking-[0.16em] py-1 px-2 flex items-center gap-2 transition-colors duration-300 ${
+                      isActive
+                        ? 'text-white font-semibold'
+                        : 'text-white/50 hover:text-white font-medium'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block w-1 h-1 rounded-full bg-[#C8C1B5] transition-all duration-300 ${
+                        isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0 -mr-3'
+                      }`}
+                    />
+                    <span>{link.label}</span>
+                  </a>
+                </Magnetic>
+              </Reveal>
+            );
+          })}
         </div>
 
         {/* Right CTA: Start a Conversation */}

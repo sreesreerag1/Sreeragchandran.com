@@ -5,7 +5,7 @@ const VIDEO_URL = '/turn-toward-camera.mp4';
 const FALLBACK_VIDEO_URL = '/Turn toword camer.mp4';
 
 const ABOUT_PARAGRAPH =
-  "With more than five years of experience in design, i focus on branding, web design, and user experience, i truly enjoy working with businesses that aim to stand out and present their best image. Let's build something incredible together!";
+  "Directing at the intersection of creative strategy, brand experience, and visual storytelling. With over a decade of leadership across brand systems, immersive environments, and global campaigns, I guide ideas from raw concept to commanding cultural execution.";
 
 interface CharacterProps {
   char: string;
@@ -602,7 +602,7 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
           {/* Main Statement (Slow cinematic reveal) */}
           <div className="mt-2.5 sm:mt-4 lg:mt-6">
             <h2 className="font-kanit font-medium text-lg sm:text-xl md:text-[28px] lg:text-[32px] xl:text-[38px] leading-[1.18] sm:leading-[1.15] lg:leading-[1.12] tracking-[-0.02em] text-white uppercase">
-              “I create ideas that don’t stay on the page.”
+              “Crafting perception through design.”
             </h2>
           </div>
 
@@ -639,13 +639,13 @@ export const CreativePhilosophy: React.FC<CreativePhilosophyProps> = ({
         style={{ opacity: 1 }}
       >
         <div className="flex flex-wrap items-center gap-y-1 font-mono text-[9px] sm:text-xs uppercase tracking-[0.14em] sm:tracking-[0.16em] text-white font-medium">
-          <span className="hover:text-white transition-colors cursor-default">Brand Identity</span>
+          <span className="hover:text-white transition-colors cursor-default">Brand Systems</span>
           <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
-          <span className="hover:text-white transition-colors cursor-default">Experiential Concepts</span>
+          <span className="hover:text-white transition-colors cursor-default">Experience Design</span>
           <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
-          <span className="hover:text-white transition-colors cursor-default">Campaign Ideation</span>
+          <span className="hover:text-white transition-colors cursor-default">Creative Campaigns</span>
           <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
-          <span className="hover:text-white transition-colors cursor-default">Visual Narrative</span>
+          <span className="hover:text-white transition-colors cursor-default">Storytelling & Content</span>
           <span className="text-white/40 mx-2 sm:mx-4 font-light select-none">|</span>
           <span className="hover:text-white transition-colors cursor-default">Creative Direction</span>
         </div>

@@ -21,6 +21,7 @@ export interface UnifiedPortfolioProject {
   galleryImages: ProjectImageItem[];
   copyright: string;
   order: number;
+  disciplines?: string[];
 }
 
 export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
@@ -70,7 +71,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Tashgeel Media and Advertising WLL. All project ownership and image copyrights remain with the company.",
-    "order": 1
+    "order": 1,
+    "disciplines": [
+      "Creative Direction",
+      "Campaign Design"
+    ]
   },
   {
     "id": "wcems-ncema",
@@ -145,7 +150,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 2
+    "order": 2,
+    "disciplines": [
+      "Creative Direction",
+      "Experience Design"
+    ]
   },
   {
     "id": "a2rl-activation-yas-mall",
@@ -202,7 +211,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 3
+    "order": 3,
+    "disciplines": [
+      "Experience Design",
+      "Spatial Brand"
+    ]
   },
   {
     "id": "abu-dhabi-ai-summit-tii",
@@ -250,7 +263,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 4
+    "order": 4,
+    "disciplines": [
+      "Creative Direction",
+      "Visual Identity"
+    ]
   },
   {
     "id": "active-earn-yourfitness-coach",
@@ -343,7 +360,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 5
+    "order": 5,
+    "disciplines": [
+      "Brand Systems",
+      "Campaign Design"
+    ]
   },
   {
     "id": "ai71-launch-atrc",
@@ -427,7 +448,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 6
+    "order": 6,
+    "disciplines": [
+      "Creative Direction",
+      "Experience Design"
+    ]
   },
   {
     "id": "annual-gathering-rta-dubai",
@@ -484,7 +509,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 7
+    "order": 7,
+    "disciplines": [
+      "Spatial Architecture",
+      "Storytelling"
+    ]
   },
   {
     "id": "being-human-personal-exhibition",
@@ -577,7 +606,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Copyright reserved to Sreerag Chandran.",
-    "order": 8
+    "order": 8,
+    "disciplines": [
+      "Art Direction",
+      "Exhibition Design"
+    ]
   },
   {
     "id": "efiica-awards-abu-dhabi-islamic-bank",
@@ -625,13 +658,17 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 9
+    "order": 9,
+    "disciplines": [
+      "Brand Systems",
+      "Event Identity"
+    ]
   },
   {
     "id": "exhibitin-stands-various-projects",
     "slug": "exhibitin-stands-various-projects",
     "folderName": "EXHIBITIN STANDS_Various Projects",
-    "title": "EXHIBITIN STANDS",
+    "title": "EXHIBITION STANDS",
     "subtitle": "Various Projects",
     "thumbnail": "/images/works/exhibitin-stands-various-projects/Thumbnail.jpg",
     "galleryImages": [
@@ -745,7 +782,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Tashgeel Media and Advertising WLL. All project ownership and image copyrights remain with the company.",
-    "order": 10
+    "order": 10,
+    "disciplines": [
+      "Spatial Design",
+      "Brand Experience"
+    ]
   },
   {
     "id": "generation-readiness-ncema",
@@ -793,7 +834,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 11
+    "order": 11,
+    "disciplines": [
+      "Creative Strategy",
+      "Editorial Design"
+    ]
   },
   {
     "id": "national-day-event-abu-dhabi-national-bank",
@@ -841,7 +886,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 12
+    "order": 12,
+    "disciplines": [
+      "Experience Design",
+      "Creative Direction"
+    ]
   },
   {
     "id": "photo-campaign-yourfitness-coach",
@@ -1000,7 +1049,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Option1 Event Services LLC. All project ownership and image copyrights remain with the company.",
-    "order": 14
+    "order": 14,
+    "disciplines": [
+      "Creative Direction",
+      "Brand Activation"
+    ]
   },
   {
     "id": "sip-fresh-feel-alive-amazon-float",
@@ -1075,7 +1128,11 @@ export const PORTFOLIO_PROJECTS: UnifiedPortfolioProject[] = [
       }
     ],
     "copyright": "Creative work shown here was produced during my time with Tashgeel Media and Advertising WLL. All project ownership and image copyrights remain with the company.",
-    "order": 15
+    "order": 15,
+    "disciplines": [
+      "Creative Campaigns",
+      "Brand Activation"
+    ]
   }
 ];
 

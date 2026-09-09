@@ -231,18 +231,32 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
         {/* Sticky Header - Full Screen Width */}
         <header className="sticky top-0 z-40 w-full bg-[#050505]/95 backdrop-blur-xl border-b border-white/15 px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-4 sm:py-5 transition-all shadow-xl">
           <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pr-32 sm:pr-44">
-            {/* LEFT: TITLE + SUBHEADING */}
+            {/* LEFT: SUBHEADING + TITLE + DISCIPLINES */}
             <div className="flex flex-col min-w-0 pr-4">
+              {project.subtitle && (
+                <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] text-[#C8C1B5]/80 mb-1">
+                  {project.subtitle}
+                </span>
+              )}
               <h2
                 id="modal-project-title"
                 className="font-kanit font-semibold text-xl sm:text-2xl md:text-3xl lg:text-4xl uppercase tracking-[-0.02em] text-white truncate"
               >
                 {project.title}
               </h2>
-              {project.subtitle && (
-                <span className="font-mono text-xs sm:text-sm uppercase tracking-[0.2em] text-white/50 mt-1">
-                  {project.subtitle}
-                </span>
+              {project.disciplines && project.disciplines.length > 0 && (
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  {project.disciplines.map((d, dIdx) => (
+                    <React.Fragment key={d}>
+                      <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.16em] text-white/60">
+                        {d}
+                      </span>
+                      {dIdx < project.disciplines!.length - 1 && (
+                        <span className="text-white/25 text-[10px] select-none">•</span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
               )}
             </div>
 

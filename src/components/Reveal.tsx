@@ -28,7 +28,8 @@ export const Reveal: React.FC<RevealProps> = ({
         }
       },
       {
-        threshold: 0.15,
+        threshold: 0.1,
+        rootMargin: '0px 0px -40px 0px',
       }
     );
 
@@ -43,12 +44,12 @@ export const Reveal: React.FC<RevealProps> = ({
     <Component
       ref={ref}
       style={{
-        transitionDuration: '700ms',
-        transitionTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+        transitionDuration: '850ms',
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
         transitionDelay: `${delay}ms`,
       }}
       className={`transition-all will-change-transform ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
       } ${className}`}
     >
       {children}

@@ -17,8 +17,8 @@ const LIGHT_INTRO_VIDEO_URL = '/videos/creature_White.mp4?v=3';
 
 const SERVICES = [
   '/ CREATIVE DIRECTION',
-  '/ BRAND IDENTITY & CAMPAIGNS',
-  '/ EXPERIENTIAL & SPATIAL',
+  '/ BRAND SYSTEMS & CAMPAIGNS',
+  '/ EXPERIENCE DESIGN & SPATIAL',
 ];
 
 // Cinematic smoothstep interpolation helper
@@ -1537,12 +1537,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                           <span className="md:hidden">
                             CREATIVE DIRECTOR
                             <br />
-                            SHAPING IDEAS INTO EXPERIENCES.
+                            BUILDING STORIES INTO EXPERIENCES.
                           </span>
                           <span className="hidden md:inline">
                             CREATIVE DIRECTOR
                             <br />
-                            SHAPING IDEAS INTO EXPERIENCES.
+                            BUILDING STORIES INTO EXPERIENCES.
                           </span>
                         </h1>
                       </div>
@@ -1585,7 +1585,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                             transform: 'translate3d(0, 15px, 0)',
                           }}
                         >
-                          I build ideas that move between brands, spaces, screens and culture, turning strategy into visual stories people remember.
+                          Directing at the intersection of brand experience, visual storytelling, and strategic design. Shaping perception for brands that command cultural presence.
                         </p>
                       </div>
                     </div>
@@ -1600,7 +1600,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                       : 'border-[#3A3A3A]/20 text-[#555555]'
                   }`}
                 >
-                  <span>CREATIVE DIRECTION • BRAND IDENTITY • EXPERIENTIAL</span>
+                  <span>CREATIVE DIRECTION • BRAND SYSTEMS • EXPERIENCE DESIGN</span>
                   <span className={isDark ? 'text-white' : 'text-[#777777]'}>
                     DUBAI • 2026
                   </span>
@@ -1630,14 +1630,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                           isDark ? 'text-white' : 'text-[#3A3A3A]'
                         }`}
                       >
-                        15 Years of Turning Ideas into Reality
+                        15 Years of Turning Vision into Reality
                       </p>
                       <p
                         className={`text-xs sm:text-sm font-light leading-relaxed transition-colors duration-600 ${
                           isDark ? 'text-white' : 'text-[#555555]'
                         }`}
                       >
-                        From brand identities and campaigns to large-scale live experiences, I’ve worked across disciplines where creativity needs to perform in the real world, not just look good on a presentation slide.
+                        From brand systems and creative campaigns to immersive physical activations, directing multidisciplinary work where strategic rigor meets uncompromising creative execution.
                       </p>
                     </div>
 
@@ -1659,10 +1659,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-1.5">
                         {[
-                          'Brand Identity',
-                          'Experiential Concepts',
-                          'Campaign Ideation',
-                          'Visual Narrative',
+                          'Brand Systems',
+                          'Experience Design',
+                          'Creative Campaigns',
+                          'Storytelling & Content',
                           'Creative Direction',
                         ].map((discipline, idx) => (
                           <div
