@@ -118,6 +118,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
   const isSiteLoadedRef = useRef(isSiteLoaded);
   useEffect(() => {
     isSiteLoadedRef.current = isSiteLoaded;
+    if (isSiteLoaded) {
+      const initialNorm = latestMouseProgressRef.current;
+      introTargetProgressRef.current = initialNorm;
+      introSmoothedProgressRef.current = initialNorm;
+      firstFrameRenderedRef.current = false;
+    }
   }, [isSiteLoaded]);
 
   // Visual Mood Theme: 'dark' (default) vs 'light'
@@ -180,6 +186,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
 
   const introTargetProgressRef = useRef(0.5);
   const introSmoothedProgressRef = useRef(0.5);
+  const pointerXRef = useRef<number | null>(null);
+  const firstFrameRenderedRef = useRef(false);
 
   // Track if user has scrolled down past zero (for mobile reverse scroll return)
   const hasScrolledDownRef = useRef(false);
@@ -411,16 +419,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
   }, [isSiteLoaded, isDark]);
 
   // Desktop Hover Scrub & Mobile First Touch Handlers
+  // Note: Early mouse and pointer tracking attached immediately on mount so cursor position is known
+  // even while the preloader is visible. Zero dead period or startup delay once the hero reveals.
   useEffect(() => {
-    // Desktop mouse hover controller: mouseX / window.innerWidth (0 = first frame, 1 = last frame)
-    // Moving RIGHT moves forward through frames; moving LEFT moves backward through frames.
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isSiteLoadedRef.current) return;
+    const updatePointer = (clientX: number) => {
       if (isMobileDevice()) return; // strictly desktop only
-      const norm = 1 - Math.max(0, Math.min(1, e.clientX / window.innerWidth));
+      pointerXRef.current = clientX;
+      // Moving RIGHT moves forward through frames; moving LEFT moves backward through frames.
+      const norm = 1 - Math.max(0, Math.min(1, clientX / window.innerWidth));
       latestMouseProgressRef.current = norm;
-      if (heroStateRef.current === 'HOVER_ACTIVE') {
+      if (isSiteLoadedRef.current && heroStateRef.current === 'HOVER_ACTIVE') {
         introTargetProgressRef.current = norm;
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      updatePointer(e.clientX);
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+        updatePointer(e.clientX);
       }
     };
 
@@ -432,12 +451,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('touchstart', handleTouchInteraction, { passive: true });
     window.addEventListener('touchmove', handleTouchInteraction, { passive: true });
     window.addEventListener('pointerdown', handleTouchInteraction, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('touchstart', handleTouchInteraction);
       window.removeEventListener('touchmove', handleTouchInteraction);
       window.removeEventListener('pointerdown', handleTouchInteraction);
@@ -651,27 +672,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
           } catch {}
         }
 
-        // Progressive activation:
-        // As soon as the very first frame is ready, immediately paint it onto the target canvas, then set ready
+        // Readiness coordination:
+        // As soon as the first frame decodes, notify heroReadinessCoordinator so the preloader
+        // knows the video stream is active. We keep the video element visible and scrubbing in real time
+        // until frames are substantially ready, eliminating any 1-frame canvas lock or dead period.
         if (isMounted() && extracted.length === 1) {
-          targetRef.current = [...extracted];
           if (videoUrl === DARK_INTRO_VIDEO_URL) {
-            drawFrameToCanvas(introCanvasDarkRef.current, extracted[0], true);
-            lastDrawnDarkIntroFrameRef.current = 0;
             heroReadinessCoordinator.setVideo01Ready();
           } else if (videoUrl === DARK_HERO_VIDEO_URL) {
-            drawFrameToCanvas(heroCanvasDarkRef.current, extracted[0], true);
-            lastDrawnDarkHeroFrameRef.current = 0;
             heroReadinessCoordinator.setVideo02Ready();
-          } else if (videoUrl === LIGHT_INTRO_VIDEO_URL) {
-            drawFrameToCanvas(introCanvasLightRef.current, extracted[0], false);
-            lastDrawnLightIntroFrameRef.current = 0;
-          } else if (videoUrl === LIGHT_HERO_VIDEO_URL) {
-            drawFrameToCanvas(heroCanvasLightRef.current, extracted[0], false);
-            lastDrawnLightHeroFrameRef.current = 0;
           }
-          setReady(true);
-        } else if (isMounted() && extracted.length % 4 === 0) {
+        } else if (isMounted() && extracted.length >= (targetFrames >= 30 ? 24 : targetFrames)) {
           targetRef.current = [...extracted];
           setReady(true);
         }
@@ -793,13 +804,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
           // Locked at top:
           smoothedScrollYRef.current = 0;
           if (!isMobileDevice()) {
-            // Only mouse movement controls VIDEO 01 on desktop
-            const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
-            const absDiff = Math.abs(diff);
-            const lerpFactor = 0.22 + 0.14 * Math.min(1.0, absDiff / 0.3);
-            introSmoothedProgressRef.current += diff * lerpFactor;
-            if (absDiff < 0.0002) {
+            if (!firstFrameRenderedRef.current) {
+              // Snap immediately on first frame so there is zero easing lag or dead period
               introSmoothedProgressRef.current = introTargetProgressRef.current;
+              firstFrameRenderedRef.current = true;
+            } else {
+              // Only mouse movement controls VIDEO 01 on desktop
+              const diff = introTargetProgressRef.current - introSmoothedProgressRef.current;
+              const absDiff = Math.abs(diff);
+              const lerpFactor = 0.24 + 0.12 * Math.min(1.0, absDiff / 0.25);
+              introSmoothedProgressRef.current += diff * lerpFactor;
+              if (absDiff < 0.0002) {
+                introSmoothedProgressRef.current = introTargetProgressRef.current;
+              }
             }
           }
         }
@@ -989,7 +1006,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
         const introProgress = introSmoothedProgressRef.current;
 
         // Dark Creature:
-        if (introCanvasDarkRef.current && darkIntroFramesRef.current.length > 0) {
+        if (isDarkIntroFramesReady && introCanvasDarkRef.current && darkIntroFramesRef.current.length > 1) {
           const darkFrames = darkIntroFramesRef.current;
           const frameIndex = Math.min(
             darkFrames.length - 1,
@@ -1016,7 +1033,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
         }
 
         // Light Creature:
-        if (introCanvasLightRef.current && lightIntroFramesRef.current.length > 0) {
+        if (isLightIntroFramesReady && introCanvasLightRef.current && lightIntroFramesRef.current.length > 1) {
           const lightFrames = lightIntroFramesRef.current;
           const frameIndex = Math.min(
             lightFrames.length - 1,
@@ -1051,7 +1068,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       const heroProgress = heroStateRef.current === 'SCROLL_ACTIVE' ? Math.min(1.0, Math.max(0, s / HERO_SCRUB_DISTANCE)) : 0;
 
       // Dark Hero Video / Canvas:
-      if (heroCanvasDarkRef.current && darkHeroFramesRef.current.length > 0) {
+      if (isDarkHeroFramesReady && heroCanvasDarkRef.current && darkHeroFramesRef.current.length > 1) {
         const darkFrames = darkHeroFramesRef.current;
         const frameIndex = Math.min(
           darkFrames.length - 1,
@@ -1078,7 +1095,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
       }
 
       // Light Hero Video / Canvas:
-      if (heroCanvasLightRef.current && lightHeroFramesRef.current.length > 0) {
+      if (isLightHeroFramesReady && heroCanvasLightRef.current && lightHeroFramesRef.current.length > 1) {
         const lightFrames = lightHeroFramesRef.current;
         const frameIndex = Math.min(
           lightFrames.length - 1,
@@ -1346,7 +1363,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                       }
                     }}
                     onSeeked={handleDarkHeroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform transition-opacity duration-300 ${
                       isDarkHeroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
@@ -1355,7 +1372,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   </video>
                   <canvas
                     ref={heroCanvasDarkRef}
-                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
+                    className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300 ${
+                      !isDarkHeroFramesReady ? 'opacity-0' : 'opacity-100'
+                    }`}
                   />
                 </div>
 
@@ -1383,7 +1402,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                       if (e.currentTarget.duration) lightHeroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleLightHeroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform transition-opacity duration-300 ${
                       isLightHeroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
@@ -1392,7 +1411,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   </video>
                   <canvas
                     ref={heroCanvasLightRef}
-                    className="absolute inset-0 w-full h-full opacity-100 pointer-events-none"
+                    className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300 ${
+                      !isLightHeroFramesReady ? 'opacity-0' : 'opacity-100'
+                    }`}
                   />
                 </div>
               </div>
@@ -1443,7 +1464,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                       }
                     }}
                     onSeeked={handleDarkIntroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform transition-opacity duration-300 ${
                       !isMobileDevice() && isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
@@ -1452,8 +1473,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   </video>
                   <canvas
                     ref={introCanvasDarkRef}
-                    className={`absolute inset-0 w-full h-full pointer-events-none ${
-                      isMobileDevice() ? 'opacity-0' : 'opacity-100'
+                    className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300 ${
+                      isMobileDevice() || !isDarkIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                   />
                 </div>
@@ -1482,7 +1503,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                       if (e.currentTarget.duration) lightIntroDurationRef.current = e.currentTarget.duration;
                     }}
                     onSeeked={handleLightIntroSeeked}
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform ${
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-full w-auto aspect-[16/9] max-w-none object-cover pointer-events-none transform-gpu will-change-transform transition-opacity duration-300 ${
                       !isMobileDevice() && isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={{ height: '100%', width: 'auto', aspectRatio: '16 / 9', objectFit: 'cover' }}
@@ -1491,8 +1512,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isSiteLoaded = true })
                   </video>
                   <canvas
                     ref={introCanvasLightRef}
-                    className={`absolute inset-0 w-full h-full pointer-events-none ${
-                      isMobileDevice() ? 'opacity-0' : 'opacity-100'
+                    className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300 ${
+                      isMobileDevice() || !isLightIntroFramesReady ? 'opacity-0' : 'opacity-100'
                     }`}
                   />
                 </div>

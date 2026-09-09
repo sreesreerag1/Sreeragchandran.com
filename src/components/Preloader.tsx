@@ -36,20 +36,21 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       if (hasExitedRef.current) return;
       hasExitedRef.current = true;
 
-      // 250ms hold at 100% / READY
+      // 100ms hold at 100% / READY
       setTimeout(() => {
         setIsExiting(true);
+        // Call onComplete immediately as exit slide begins so Hero is interactive on the very first visible frame
+        if (onCompleteRef.current) {
+          onCompleteRef.current();
+        }
 
         // 750ms upward slide transition
         setTimeout(() => {
           setIsFinished(true);
           document.body.style.overflow = originalBodyOverflow;
           document.documentElement.style.overflow = originalDocOverflow;
-          if (onCompleteRef.current) {
-            onCompleteRef.current();
-          }
         }, 750);
-      }, 250);
+      }, 100);
     };
 
     // Smooth RAF ticker
