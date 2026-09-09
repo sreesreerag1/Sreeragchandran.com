@@ -55,7 +55,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
           </div>
 
           {/* Right: Supporting Grid of detail squares (6 cols) */}
-          <div className="hidden sm:grid lg:col-span-6 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
+          <div className="hidden lg:grid lg:col-span-6 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
             {images.slice(1, 5).map((img, i) => (
               <div key={img.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
                 <img
@@ -79,18 +79,21 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
       );
     }
 
-    // Case B: Portrait-rich projects (e.g. BEING HUMAN, SIP FRESH FEEL ALIVE, AI71 LAUNCH)
-    const hasPortraits = images.some((img) => img.orientation === 'portrait');
-    if (hasPortraits && images.length >= 2) {
-      const portraitImages = images.filter((img) => img.orientation === 'portrait');
+    // Case B: Portrait-rich projects (e.g. BEING HUMAN, SIP FRESH FEEL ALIVE)
+    // Requires at least 2 portraits so the left 2-column grid is completely filled without empty voids
+    const portraitImages = images.filter((img) => img.orientation === 'portrait');
+    if (portraitImages.length >= 2 && images.length >= 3) {
       const landscapeImages = images.filter((img) => img.orientation !== 'portrait');
-      const heroImg = landscapeImages.length > 0 ? landscapeImages[0] : primary;
       const portraitsToDisplay = portraitImages.slice(0, 2);
+      const heroImg =
+        landscapeImages.length > 0
+          ? landscapeImages[0]
+          : images.find((img) => !portraitsToDisplay.some((p) => p.id === img.id)) || primary;
 
       return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
           {/* Left: 2 Paired Vertical Portraits (5 cols) */}
-          <div className="hidden sm:grid lg:col-span-5 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
+          <div className="hidden lg:grid lg:col-span-5 grid-cols-2 gap-4 sm:gap-6 h-full min-h-0">
             {portraitsToDisplay.map((pImg, pIdx) => (
               <div key={pImg.id} className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
                 <img
@@ -134,7 +137,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-5 md:pt-7 flex-1 min-h-0 overflow-hidden">
         {/* Left: Two Stacked Images (5 cols) */}
-        <div className="hidden sm:grid lg:col-span-5 grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
+        <div className="hidden lg:grid lg:col-span-5 grid-cols-1 gap-4 sm:gap-6 h-full min-h-0">
           <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.15] bg-[#070707] flex items-center justify-center p-2">
             <img
               src={leftTop.src}
@@ -180,7 +183,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
   return (
     <div
       ref={cardContainerRef}
-      className="sticky top-20 sm:top-24 md:top-28 w-full mb-12 sm:mb-16 md:mb-20 last:mb-0"
+      className="sticky top-16 sm:top-20 md:top-24 w-full mb-12 sm:mb-16 md:mb-20 last:mb-0"
       style={{
         zIndex: 10 + index,
       }}
@@ -190,7 +193,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
         onClick={() => onOpenModal(project.slug)}
         data-cursor="project"
         data-cursor-text="VIEW"
-        className="group/card cursor-pointer relative w-full h-[85vh] min-h-[560px] max-h-[860px] rounded-3xl md:rounded-[36px] bg-[#0c0c0c] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl overflow-hidden flex flex-col p-5 sm:p-7 md:p-10 transition-all duration-500"
+        className="group/card cursor-pointer relative w-full h-[78vh] sm:h-[80vh] md:h-[82vh] min-h-[460px] sm:min-h-[500px] max-h-[820px] rounded-3xl md:rounded-[36px] bg-[#0c0c0c] border border-white/[0.15] hover:border-[#C8C1B5]/40 shadow-2xl overflow-hidden flex flex-col p-5 sm:p-7 md:p-10 transition-colors duration-300 transform-gpu"
       >
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 md:pb-6 border-b border-white/[0.15] shrink-0">
@@ -244,7 +247,7 @@ const StickyCard: React.FC<StickyCardProps> = ({ project, index, onOpenModal }) 
 
         {/* Mobile copyright notice */}
         {project.copyright && (
-          <div className="md:hidden pt-2">
+          <div className="md:hidden pt-2 shrink-0">
             <p
               className="text-[#A6A6A6] font-sans text-[9px] leading-tight select-none opacity-55 text-left"
               style={{ maxWidth: '340px' }}

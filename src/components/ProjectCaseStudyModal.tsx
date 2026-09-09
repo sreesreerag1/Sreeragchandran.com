@@ -44,20 +44,23 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
     };
   }, [project, onClose]);
 
-  if (!project) return null;
-
   // Find prev/next projects for sequential navigation
-  const currentIndex = allProjects.findIndex((p) => p.slug === project.slug || p.id === project.id);
+  const currentIndex = project
+    ? allProjects.findIndex((p) => p.slug === project.slug || p.id === project.id)
+    : -1;
   const prevProject =
     currentIndex > 0 ? allProjects[currentIndex - 1] : allProjects[allProjects.length - 1];
   const nextProject =
-    currentIndex < allProjects.length - 1 ? allProjects[currentIndex + 1] : allProjects[0];
+    currentIndex >= 0 && currentIndex < allProjects.length - 1
+      ? allProjects[currentIndex + 1]
+      : allProjects[0];
 
-  const heroImage = project.galleryImages[0];
-  const remainingImages = project.galleryImages.slice(1);
+  const heroImage = project?.galleryImages[0];
+  const remainingImages = project?.galleryImages.slice(1) || [];
 
   // Helper to render uncropped gallery images with full-screen editorial rhythm
   const renderEditorialGallery = (images: ProjectImageItem[]) => {
+    const title = project?.title || 'Project';
     const elements: React.ReactNode[] = [];
     let i = 0;
 
@@ -72,7 +75,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-3xl border border-white/10 bg-[#080808] shadow-2xl flex items-center justify-center p-2 sm:p-4 md:p-6 group">
               <img
                 src={current.src}
-                alt={`${project.title} - ${current.filename}`}
+                alt={`${title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[92vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -91,7 +94,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
               <img
                 src={current.src}
-                alt={`${project.title} - ${current.filename}`}
+                alt={`${title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -100,7 +103,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
               <img
                 src={next.src}
-                alt={`${project.title} - ${next.filename}`}
+                alt={`${title} - ${next.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -119,7 +122,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="md:col-span-5 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
               <img
                 src={current.src}
-                alt={`${project.title} - ${current.filename}`}
+                alt={`${title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -128,7 +131,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="md:col-span-7 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
               <img
                 src={next.src}
-                alt={`${project.title} - ${next.filename}`}
+                alt={`${title} - ${next.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -146,7 +149,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="md:col-span-7 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
               <img
                 src={current.src}
-                alt={`${project.title} - ${current.filename}`}
+                alt={`${title} - ${current.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -155,7 +158,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
             <div className="md:col-span-5 w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group">
               <img
                 src={next.src}
-                alt={`${project.title} - ${next.filename}`}
+                alt={`${title} - ${next.filename}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -177,7 +180,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
           <div className={`${leftCol} w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group`}>
             <img
               src={current.src}
-              alt={`${project.title} - ${current.filename}`}
+              alt={`${title} - ${current.filename}`}
               loading="lazy"
               decoding="async"
               className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -186,7 +189,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
           <div className={`${rightCol} w-full relative overflow-hidden rounded-xl md:rounded-2xl border border-white/10 bg-[#080808] shadow-lg flex items-center justify-center p-2 sm:p-4 group`}>
             <img
               src={next.src}
-              alt={`${project.title} - ${next.filename}`}
+              alt={`${title} - ${next.filename}`}
               loading="lazy"
               decoding="async"
               className="w-full max-h-[88vh] h-auto object-contain mx-auto transition-transform duration-700 ease-out group-hover:scale-[1.01]"
@@ -202,17 +205,18 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
 
   return (
     <AnimatePresence>
-      <motion.div
-        key="project-modal-backdrop"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed inset-0 z-50 flex flex-col bg-[#050505] text-white overflow-hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-project-title"
-      >
+      {project && (
+        <motion.div
+          key="project-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed inset-0 z-50 flex flex-col bg-[#050505] text-white overflow-hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-project-title"
+        >
         {/* ALWAYS-FLOATING PROMINENT CLOSE BUTTON */}
         <button
           type="button"
@@ -328,6 +332,7 @@ export const ProjectCaseStudyModal: React.FC<ProjectCaseStudyModalProps> = ({
           </div>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 };
